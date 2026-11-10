@@ -1,6 +1,6 @@
 """
 Standalone IPTV updater (kono GUI / iptv_core lagbe na).
-Source: AynaOTT + JagoBD + GitHub (BD, IN, PK, Movies/Music) -> dead check -> shudhu alive rakhbe.
+Source: AynaOTT + JagoBD + GitHub (BD, IN, Movies/Music) -> dead check -> shudhu alive rakhbe.
 PRIORITY list er channel gula playlist er sobar upore thakbe (oi order e).
 """
 import json, os, re, ssl, sys, time
@@ -23,16 +23,19 @@ IPTV_BASE = "https://iptv-org.github.io/iptv"
 COUNTRY_SOURCES = [
     ("Bangladesh", f"{IPTV_BASE}/countries/bd.m3u"),
     ("India",      f"{IPTV_BASE}/countries/in.m3u"),
-   ]
+    ("Pakistan",   f"{IPTV_BASE}/countries/pk.m3u"),
+]
 
 # Category + Bhasha: duita lister common channel (group name, category, language code)
 COMBOS = [
-    ("Bangla Music",   "music",  "ben"),
+    ("Kolkata Movies", "movies", "ben"),
     ("Hindi Movies",   "movies", "hin"),
-    ("Hindi Music",    "music",  "hin"), 
     ("English Movies", "movies", "eng"),
+    ("Hindi Music",    "music",  "hin"),
     ("English Music",  "music",  "eng"),
-   ]
+    ("Bangla Music",   "music",  "ben"),
+    ("Sports",         "sports", ("hin", "eng", "ben")),
+]
 
 # Nijer extra m3u (ekhane shob channel nibe, original group thakbe)
 EXTRA_PLAYLISTS = [
@@ -44,12 +47,14 @@ EXTRA_PLAYLISTS = [
 USE_GITHUB_SEARCH = True
 
 # Playlist e group er order
-GROUP_ORDER = ["Bangladesh", "Bangla (India)", "India", "Bangla Music",
-               "Hindi Movies", "Hindi Music", "English Movies", "English Music"]
+GROUP_ORDER = ["Kolkata Movies", "Hindi Movies", "English Movies", "Hindi Music", "English Music",
+               "Bangla Music", "Sports",
+               "Bangladesh", "Bangla (India)", "India", "Pakistan"]   # er pore baki shob (Others)
 
 # Sobar upore ei channel gula (ei order e) thakbe
 PRIORITY = [
-    ("Somoy TV", "BD"), ("Jamuna Television", "BD"), ("Ekattor TV", "BD"), ("Channel 24", "BD"), ("DBC News", "BD"),
+    ("BTV", "BD"), ("BTV World", "BD"), ("BTV Chattogram", "BD"), ("Somoy TV", "BD"),
+    ("Jamuna Television", "BD"), ("Ekattor TV", "BD"), ("Channel 24", "BD"), ("DBC News", "BD"),
     ("Independent Television", "BD"), ("ATN News", "BD"), ("News 24", "BD"),
     ("Channel i", "BD"), ("NTV", "BD"), ("RTV", "BD"), ("ATN Bangla", "BD"), ("Banglavision", "BD"),
     ("Maasranga Television", "BD"), ("Deepto TV", "BD"), ("Boishakhi TV", "BD"), ("Desh TV", "BD"),
@@ -124,7 +129,8 @@ def scrape_github():
     res = []
     # 1) Category x Language (specific group age dewa hoy, jate duplicate hole egulo jite)
     for group, cat, lang in COMBOS:
-        lang_urls = {c["url"].split("|")[0] for c in get(f"{IPTV_BASE}/languages/{lang}.m3u")}
+        langs = (lang,) if isinstance(lang, str) else lang
+        lang_urls = {c["url"].split("|")[0] for lg in langs for c in get(f"{IPTV_BASE}/languages/{lg}.m3u")}
         n = 0
         for c in get(f"{IPTV_BASE}/categories/{cat}.m3u"):
             if c["url"].split("|")[0] in lang_urls:
@@ -134,7 +140,7 @@ def scrape_github():
 
     # 2) Desh wise
     for group, url in COUNTRY_SOURCES:
-        res.extend({**c, "group": group} for c in get(url))
+        res.extend({**c, "group": "Sports" if "sport" in c["group"].lower() else group} for c in get(url))
 
     # 3) Extra playlist (original group thakbe)
     for url in EXTRA_PLAYLISTS:
@@ -411,11 +417,18 @@ def bd_group(name):
     return "Bangla Music" if re.search(r"\b(music|gaan|song|sangeet)\b", name.lower()) else "Bangladesh"
 
 
+KOLKATA_RE = re.compile(r"\b(jalsha movies|zee bangla cinema|colors bangla cinema|bangla cinema|"
+                        r"bangla movies?|bengali movies?|bengali cinema)\b")
+
+
 def keyword_group(name, group=""):
     """Random GitHub playlist er channel er jonno naam/group dekhe category bujhe"""
     t = f"{name} {group}".lower()
+    if KOLKATA_RE.search(t):
+        return "Kolkata Movies"
     music = re.search(r"\b(music|song|songs|gaan|mtv)\b", t)
     movie = re.search(r"\b(movie|movies|cinema|film|films|flix|hbo|bollywood|hollywood)\b", t)
+    sport = re.search(r"\b(sport|sports|cricket|football)\b", t)
     bn = re.search(r"\b(bangla|bengali)\b", t)
     hi = re.search(r"\b(hindi|bollywood)\b", t)
     en = re.search(r"\b(english|hollywood|hbo)\b", t)
@@ -431,25 +444,9 @@ def keyword_group(name, group=""):
             return "Hindi Movies"
         if en:
             return "English Movies"
+    if sport:
+        return "Sports"
     return None
-
-
-def dedupe_by_name(chs, limit):
-    """Ekoi naam er channel ek bar-i rakhbe (limit ta porjonto). Specific group > desh, tarpor source, tarpor speed"""
-    specific = {g for g, _c, _l in COMBOS}
-
-    def rank(c):
-        g = c["group"]
-        return (0 if g in specific else 1 if g in GROUP_ORDER else 2,
-                SOURCE_RANK.get(c["source"], 9), c.get("latency", 99))
-
-    kept, count = set(), {}
-    for c in sorted(chs, key=rank):
-        key = norm(c["name"]) or c["name"].lower()
-        if count.get(key, 0) < limit:
-            count[key] = count.get(key, 0) + 1
-            kept.add(id(c))
-    return [c for c in chs if id(c) in kept]
 
 
 # ------------------------------------------------------------------ output
@@ -485,6 +482,8 @@ def main():
                 c["group"] = kw
             elif norm(c["name"]) not in PRIORITY_MAP:
                 continue
+        if KOLKATA_RE.search(c["name"].lower()):
+            c["group"] = "Kolkata Movies"
         seen.add(raw)
         items.append(c)
     log(f"Total unique channel: {len(items)}")
@@ -516,8 +515,8 @@ def main():
         before = len(rest)
         rest = dedupe_by_name(rest, MAX_LINKS_PER_CHANNEL)
         log(f"Duplicate naam bad: {before} -> {len(rest)}")
-    rest.sort(key=lambda c: (GROUP_ORDER.index(c["group"]) if c["group"] in GROUP_ORDER else 99,
-                             c["group"].lower(), c["name"].lower()))
+    # A-Z na, shudhu group order e (group er vitore source er order e thakbe)
+    rest.sort(key=lambda c: GROUP_ORDER.index(c["group"]) if c["group"] in GROUP_ORDER else 99)
 
     missing = [n for i, (n, _c) in enumerate(PRIORITY) if i not in buckets]
     log(f"Priority: {len(buckets)}/{len(PRIORITY)} channel alive paoa gese")
