@@ -1,6 +1,6 @@
 """
 Standalone IPTV updater (kono GUI / iptv_core lagbe na).
-Source: AynaOTT + JagoBD + GitHub (BD, IN, Movies/Music) -> dead check -> shudhu alive rakhbe.
+Source: AynaOTT + JagoBD + GitHub (BD, IN, PK, Movies/Music) -> dead check -> shudhu alive rakhbe.
 PRIORITY list er channel gula playlist er sobar upore thakbe (oi order e).
 """
 import json, os, re, ssl, sys, time
@@ -447,6 +447,24 @@ def keyword_group(name, group=""):
     if sport:
         return "Sports"
     return None
+
+
+def dedupe_by_name(chs, limit):
+    """Ekoi naam er channel ek bar-i rakhbe (limit ta porjonto). Specific group > desh, tarpor source, tarpor speed"""
+    specific = {g for g, _c, _l in COMBOS}
+
+    def rank(c):
+        g = c["group"]
+        return (0 if g in specific else 1 if g in GROUP_ORDER else 2,
+                SOURCE_RANK.get(c["source"], 9), c.get("latency", 99))
+
+    kept, count = set(), {}
+    for c in sorted(chs, key=rank):
+        key = norm(c["name"]) or c["name"].lower()
+        if count.get(key, 0) < limit:
+            count[key] = count.get(key, 0) + 1
+            kept.add(id(c))
+    return [c for c in chs if id(c) in kept]
 
 
 # ------------------------------------------------------------------ output
