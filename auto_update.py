@@ -12,7 +12,8 @@ from pathlib import Path
 OUTPUT = Path("playlist.m3u")
 WORKERS = 60                 # ek sathe koto link check hobe
 CHECK_TIMEOUT = 8            # sekond
-MAX_LINKS_PER_PRIORITY = 3   # priority channel er proti channel e max koto alive link (0 = shob)
+MAX_LINKS_PER_PRIORITY = 1   # top 39 channel er proti channel e max koto alive link (0 = shob)
+MAX_LINKS_PER_CHANNEL = 1    # baki channel er proti naam e max koto link (1 = duplicate nei)
 MIN_KEEP_RATIO = 0.5         # alive sonkhya ager playlist er 50% er niche hole overwrite korbe na
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
 
@@ -22,17 +23,16 @@ IPTV_BASE = "https://iptv-org.github.io/iptv"
 COUNTRY_SOURCES = [
     ("Bangladesh", f"{IPTV_BASE}/countries/bd.m3u"),
     ("India",      f"{IPTV_BASE}/countries/in.m3u"),
-    ("Pakistan",   f"{IPTV_BASE}/countries/pk.m3u"),
-]
+   ]
 
 # Category + Bhasha: duita lister common channel (group name, category, language code)
 COMBOS = [
-    ("Hindi Movies",   "movies", "hin"),
-    ("English Movies", "movies", "eng"),
-    ("Hindi Music",    "music",  "hin"),
-    ("English Music",  "music",  "eng"),
     ("Bangla Music",   "music",  "ben"),
-]
+    ("Hindi Movies",   "movies", "hin"),
+    ("Hindi Music",    "music",  "hin"), 
+    ("English Movies", "movies", "eng"),
+    ("English Music",  "music",  "eng"),
+   ]
 
 # Nijer extra m3u (ekhane shob channel nibe, original group thakbe)
 EXTRA_PLAYLISTS = [
@@ -44,13 +44,12 @@ EXTRA_PLAYLISTS = [
 USE_GITHUB_SEARCH = True
 
 # Playlist e group er order
-GROUP_ORDER = ["Bangladesh", "Bangla (India)", "India", "Pakistan", "Bangla Music",
+GROUP_ORDER = ["Bangladesh", "Bangla (India)", "India", "Bangla Music",
                "Hindi Movies", "Hindi Music", "English Movies", "English Music"]
 
 # Sobar upore ei channel gula (ei order e) thakbe
 PRIORITY = [
-    ("BTV", "BD"), ("BTV World", "BD"), ("BTV Chattogram", "BD"), ("Somoy TV", "BD"),
-    ("Jamuna Television", "BD"), ("Ekattor TV", "BD"), ("Channel 24", "BD"), ("DBC News", "BD"),
+    ("Somoy TV", "BD"), ("Jamuna Television", "BD"), ("Ekattor TV", "BD"), ("Channel 24", "BD"), ("DBC News", "BD"),
     ("Independent Television", "BD"), ("ATN News", "BD"), ("News 24", "BD"),
     ("Channel i", "BD"), ("NTV", "BD"), ("RTV", "BD"), ("ATN Bangla", "BD"), ("Banglavision", "BD"),
     ("Maasranga Television", "BD"), ("Deepto TV", "BD"), ("Boishakhi TV", "BD"), ("Desh TV", "BD"),
@@ -435,6 +434,24 @@ def keyword_group(name, group=""):
     return None
 
 
+def dedupe_by_name(chs, limit):
+    """Ekoi naam er channel ek bar-i rakhbe (limit ta porjonto). Specific group > desh, tarpor source, tarpor speed"""
+    specific = {g for g, _c, _l in COMBOS}
+
+    def rank(c):
+        g = c["group"]
+        return (0 if g in specific else 1 if g in GROUP_ORDER else 2,
+                SOURCE_RANK.get(c["source"], 9), c.get("latency", 99))
+
+    kept, count = set(), {}
+    for c in sorted(chs, key=rank):
+        key = norm(c["name"]) or c["name"].lower()
+        if count.get(key, 0) < limit:
+            count[key] = count.get(key, 0) + 1
+            kept.add(id(c))
+    return [c for c in chs if id(c) in kept]
+
+
 # ------------------------------------------------------------------ output
 def write_playlist(top, rest):
     def q(s):
@@ -495,6 +512,10 @@ def main():
     for idx in sorted(buckets):
         lst = sorted(buckets[idx], key=lambda c: (SOURCE_RANK.get(c["source"], 9), c.get("latency", 99)))
         top.extend(lst[:MAX_LINKS_PER_PRIORITY] if MAX_LINKS_PER_PRIORITY else lst)
+    if MAX_LINKS_PER_CHANNEL:
+        before = len(rest)
+        rest = dedupe_by_name(rest, MAX_LINKS_PER_CHANNEL)
+        log(f"Duplicate naam bad: {before} -> {len(rest)}")
     rest.sort(key=lambda c: (GROUP_ORDER.index(c["group"]) if c["group"] in GROUP_ORDER else 99,
                              c["group"].lower(), c["name"].lower()))
 
