@@ -57,7 +57,7 @@ GROUP_ORDER = ["Kolkata Movies", "Hindi Movies", "English Movies", "Hindi Music"
 PRIORITY = [
     ("BTV", "BD"), ("BTV World", "BD"), ("BTV Chattogram", "BD"), ("Somoy TV", "BD"),
     ("Jamuna Television", "BD"), ("Ekattor TV", "BD"), ("Channel 24", "BD"), ("DBC News", "BD"),
-    ("Independent Television", "BD"), ("ATN News", "BD"), ("News 24", "BD"),
+    ("Independent Television", "BD"), ("ATN News", "BD"), ("News24", "BD"),
     ("Channel i", "BD"), ("NTV", "BD"), ("RTV", "BD"), ("ATN Bangla", "BD"), ("Banglavision", "BD"),
     ("Maasranga Television", "BD"), ("Deepto TV", "BD"), ("Boishakhi TV", "BD"), ("Desh TV", "BD"),
     ("Nagorik TV", "BD"), ("GTV", "BD"), ("Asian TV", "BD"), ("SA TV", "BD"), ("Channel 9", "BD"),
