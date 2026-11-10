@@ -40,6 +40,7 @@ COMBOS = [
 # Nijer extra m3u (ekhane shob channel nibe, original group thakbe)
 EXTRA_PLAYLISTS = [
     "https://raw.githubusercontent.com/zahidrock/zahid/refs/heads/main/tv.m3u8",
+    "https://github.com/abusaeeidx/Mrgify-BDIX-IPTV/blob/main/playlist.m3u",
 ]
 
 # GitHub code search (GITHUB_TOKEN lagbe). Random playlist theke shudhu movies/music (BD/IN/EN)
