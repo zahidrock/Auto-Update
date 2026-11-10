@@ -1,6 +1,6 @@
 """
 Standalone IPTV updater (kono GUI / iptv_core lagbe na).
-Source: AynaOTT + JagoBD + GitHub m3u -> shob channel nibe -> dead check -> shudhu alive rakhbe.
+Source: AynaOTT + JagoBD + GitHub (BD, IN, PK, Movies/Music) -> dead check -> shudhu alive rakhbe.
 PRIORITY list er channel gula playlist er sobar upore thakbe (oi order e).
 """
 import json, os, re, ssl, sys, time
@@ -16,21 +16,36 @@ MAX_LINKS_PER_PRIORITY = 3   # priority channel er proti channel e max koto aliv
 MIN_KEEP_RATIO = 0.5         # alive sonkhya ager playlist er 50% er niche hole overwrite korbe na
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
 
-# GitHub e jei m3u file gula theke channel nibe (nijer moto add/remove koro)
-GITHUB_M3U_SOURCES = [
-    "https://iptv-org.github.io/iptv/countries/bd.m3u",
-    "https://iptv-org.github.io/iptv/countries/in.m3u",
-    "https://iptv-org.github.io/iptv/categories/movies.m3u",
-    "https://iptv-org.github.io/iptv/categories/animation.m3u",
-    "https://iptv-org.github.io/iptv/categories/kids.m3u",
-    "https://iptv-org.github.io/iptv/categories/series.m3u",
-    "https://iptv-org.github.io/iptv/categories/sports.m3u",
-    "https://iptv-org.github.io/iptv/countries/us.m3u",
-    "https://iptv-org.github.io/iptv/countries/ca.m3u",
-    "https://iptv-org.github.io/iptv/countries/au.m3u",
+IPTV_BASE = "https://iptv-org.github.io/iptv"
+
+# Desh wise (shob channel nibe). (group name, m3u link)
+COUNTRY_SOURCES = [
+    ("Bangladesh", f"{IPTV_BASE}/countries/bd.m3u"),
+    ("India",      f"{IPTV_BASE}/countries/in.m3u"),
+    ("Pakistan",   f"{IPTV_BASE}/countries/pk.m3u"),
+]
+
+# Category + Bhasha: duita lister common channel (group name, category, language code)
+COMBOS = [
+    ("Hindi Movies",   "movies", "hin"),
+    ("English Movies", "movies", "eng"),
+    ("Hindi Music",    "music",  "hin"),
+    ("English Music",  "music",  "eng"),
+    ("Bangla Music",   "music",  "ben"),
+]
+
+# Nijer extra m3u (ekhane shob channel nibe, original group thakbe)
+EXTRA_PLAYLISTS = [
     "https://raw.githubusercontent.com/zahidrock/zahid/refs/heads/main/tv.m3u8",
 ]
-USE_GITHUB_SEARCH = True     # token thakle GitHub code search diye notun m3u file khuje ber korbe
+
+# GitHub code search (GITHUB_TOKEN lagbe). Random playlist theke shudhu movies/music (BD/IN/EN)
+# ar tomar PRIORITY channel gula nibe
+USE_GITHUB_SEARCH = True
+
+# Playlist e group er order
+GROUP_ORDER = ["Bangladesh", "Bangla (India)", "India", "Pakistan", "Bangla Music",
+               "Hindi Movies", "Hindi Music", "English Movies", "English Music"]
 
 # Sobar upore ei channel gula (ei order e) thakbe
 PRIORITY = [
@@ -95,15 +110,38 @@ def parse_m3u(text, source):
 
 # ------------------------------------------------------------------ scrapers
 def scrape_github():
-    res = []
-    for url in GITHUB_M3U_SOURCES:
-        try:
-            items = parse_m3u(http_get(url, timeout=25), "GitHub")
-            log(f"[GitHub] {url.split('/')[-1]}: {len(items)} channel")
-            res.extend(items)
-        except Exception as e:
-            log(f"[GitHub] fail {url}: {e}")
+    cache = {}
 
+    def get(url):
+        if url not in cache:
+            try:
+                cache[url] = parse_m3u(http_get(url, timeout=40), "GitHub")
+            except Exception as e:
+                log(f"[GitHub] fail {url}: {e}")
+                cache[url] = []
+            log(f"[GitHub] {url.replace(IPTV_BASE + '/', '')}: {len(cache[url])} channel")
+        return cache[url]
+
+    res = []
+    # 1) Category x Language (specific group age dewa hoy, jate duplicate hole egulo jite)
+    for group, cat, lang in COMBOS:
+        lang_urls = {c["url"].split("|")[0] for c in get(f"{IPTV_BASE}/languages/{lang}.m3u")}
+        n = 0
+        for c in get(f"{IPTV_BASE}/categories/{cat}.m3u"):
+            if c["url"].split("|")[0] in lang_urls:
+                res.append({**c, "group": group})
+                n += 1
+        log(f"[GitHub] {group}: {n} channel")
+
+    # 2) Desh wise
+    for group, url in COUNTRY_SOURCES:
+        res.extend({**c, "group": group} for c in get(url))
+
+    # 3) Extra playlist (original group thakbe)
+    for url in EXTRA_PLAYLISTS:
+        res.extend(get(url))
+
+    # 4) GitHub code search
     if USE_GITHUB_SEARCH and GITHUB_TOKEN:
         h = {"User-Agent": "Mozilla/5.0", "Accept": "application/vnd.github+json",
              "Authorization": f"Bearer {GITHUB_TOKEN}"}
@@ -120,17 +158,21 @@ def scrape_github():
             except Exception as e:
                 log(f"[GitHub search] page {page}: {e}")
                 break
+        found = 0
         for raw in dict.fromkeys(raws):
             try:
                 txt = http_get(raw, timeout=15)
                 if "#EXTINF" in txt:
-                    res.extend(parse_m3u(txt, "GitHub"))
+                    for c in parse_m3u(txt, "GitHub"):
+                        c["search"] = True
+                        res.append(c)
+                        found += 1
             except Exception:
                 pass
+        log(f"[GitHub search] {len(raws)} file theke {found} channel")
     elif USE_GITHUB_SEARCH:
         log("[GitHub search] GITHUB_TOKEN nei, search skip kora holo")
     return res
-
 
 def scrape_aynaott():
     base = "https://web.aynaott.com"
@@ -366,6 +408,33 @@ def is_blocked(c):
     return any(re.search(rf"\b{re.escape(w)}\b", t) for w in BLOCK_WORDS)
 
 
+def bd_group(name):
+    return "Bangla Music" if re.search(r"\b(music|gaan|song|sangeet)\b", name.lower()) else "Bangladesh"
+
+
+def keyword_group(name, group=""):
+    """Random GitHub playlist er channel er jonno naam/group dekhe category bujhe"""
+    t = f"{name} {group}".lower()
+    music = re.search(r"\b(music|song|songs|gaan|mtv)\b", t)
+    movie = re.search(r"\b(movie|movies|cinema|film|films|flix|hbo|bollywood|hollywood)\b", t)
+    bn = re.search(r"\b(bangla|bengali)\b", t)
+    hi = re.search(r"\b(hindi|bollywood)\b", t)
+    en = re.search(r"\b(english|hollywood|hbo)\b", t)
+    if music:
+        if bn:
+            return "Bangla Music"
+        if hi:
+            return "Hindi Music"
+        if en:
+            return "English Music"
+    if movie:
+        if hi:
+            return "Hindi Movies"
+        if en:
+            return "English Movies"
+    return None
+
+
 # ------------------------------------------------------------------ output
 def write_playlist(top, rest):
     def q(s):
@@ -391,6 +460,14 @@ def main():
         raw = c["url"].split("|")[0].strip()
         if not raw or raw in seen or is_blocked(c):
             continue
+        if c["source"] in ("AynaOTT", "JagoBD"):
+            c["group"] = bd_group(c["name"])
+        elif c.get("search"):
+            kw = keyword_group(c["name"], c.get("group", ""))
+            if kw:
+                c["group"] = kw
+            elif norm(c["name"]) not in PRIORITY_MAP:
+                continue
         seen.add(raw)
         items.append(c)
     log(f"Total unique channel: {len(items)}")
@@ -418,7 +495,8 @@ def main():
     for idx in sorted(buckets):
         lst = sorted(buckets[idx], key=lambda c: (SOURCE_RANK.get(c["source"], 9), c.get("latency", 99)))
         top.extend(lst[:MAX_LINKS_PER_PRIORITY] if MAX_LINKS_PER_PRIORITY else lst)
-    rest.sort(key=lambda c: (c["group"].lower(), c["name"].lower()))
+    rest.sort(key=lambda c: (GROUP_ORDER.index(c["group"]) if c["group"] in GROUP_ORDER else 99,
+                             c["group"].lower(), c["name"].lower()))
 
     missing = [n for i, (n, _c) in enumerate(PRIORITY) if i not in buckets]
     log(f"Priority: {len(buckets)}/{len(PRIORITY)} channel alive paoa gese")
