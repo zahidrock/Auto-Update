@@ -3,9 +3,16 @@ Standalone IPTV updater (kono GUI / iptv_core lagbe na).
 Source: AynaOTT + JagoBD + GitHub (BD, IN, PK, Movies/Music) -> dead check -> shudhu alive rakhbe.
 PRIORITY list er channel gula playlist er sobar upore thakbe (oi order e).
 """
-import difflib, json, os, re, ssl, sys, time
-from collections import Counter
-import urllib.error, urllib.parse, urllib.request
+import json
+import os
+import re
+import socket
+import ssl
+import sys
+import time
+import urllib.error
+import urllib.parse
+import urllib.request
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
@@ -15,23 +22,17 @@ WORKERS = 60                 # ek sathe koto link check hobe
 CHECK_TIMEOUT = 8            # sekond
 MAX_LINKS_PER_PRIORITY = 1   # top 39 channel er proti channel e max koto alive link (0 = shob)
 MAX_LINKS_PER_CHANNEL = 1    # baki channel er proti naam e max koto link (1 = duplicate nei)
-PRIORITY_KEEP_DEAD = False        # True dile: top channel er kono link alive na paleo (geo-block hote pare) 1 ta link rakhbe
-REPORT = Path("priority_report.txt")
 MIN_KEEP_RATIO = 0.5         # alive sonkhya ager playlist er 50% er niche hole overwrite korbe na
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
 
 IPTV_BASE = "https://iptv-org.github.io/iptv"
 
 # Desh wise (shob channel nibe). (group name, m3u link)
-INDIA_LANGS = ("hin", "ben")      # India er list theke shudhu ei bhasha (hin=Hindi, ben=Bangla). Shob bhasha chaile None dao
 COUNTRY_SOURCES = [
-    ("Bangladesh", f"{IPTV_BASE}/countries/bd.m3u", None),
-    ("India",      f"{IPTV_BASE}/countries/in.m3u", INDIA_LANGS),
-    ("Pakistan",   f"{IPTV_BASE}/countries/pk.m3u", None),
+    ("Bangladesh", f"{IPTV_BASE}/countries/bd.m3u"),
+    ("India",      f"{IPTV_BASE}/countries/in.m3u"),
+    ("Pakistan",   f"{IPTV_BASE}/countries/pk.m3u"),
 ]
-
-# True dile: upore dewa group chhara onno group er channel (top 39 / manual chhara) playlist e rakhbe na
-STRICT_GROUPS = True
 
 # Category + Bhasha: duita lister common channel (group name, category, language code)
 COMBOS = [
@@ -47,6 +48,8 @@ COMBOS = [
 # Nijer extra m3u (ekhane shob channel nibe, original group thakbe)
 EXTRA_PLAYLISTS = [
     "https://raw.githubusercontent.com/zahidrock/zahid/refs/heads/main/tv.m3u8",
+    "https://raw.githubusercontent.com/abusaeeidx/Mrgify-BDIX-IPTV/refs/heads/main/playlist.m3u",
+    "https://raw.githubusercontent.com/saeidrahmanbd/BDIX-IPTV/main/International-Playlist.m3u",
 ]
 
 # GitHub code search (GITHUB_TOKEN lagbe). Random playlist theke shudhu movies/music (BD/IN/EN)
@@ -54,31 +57,17 @@ EXTRA_PLAYLISTS = [
 USE_GITHUB_SEARCH = True
 
 # Playlist e group er order
-GROUP_ORDER = ["Kolkata Movies", "Hindi Movies", "English Movies", "Hindi Music", "English Music",
-               "Bangla Music", "Sports",
-               "Bangladesh", "Bangla (India)", "India", "Pakistan"]   # er pore baki shob (Others)
-
-# Tumi nijer jana link ekhane dao: (naam, link, verify)
-# verify=False -> check korbe na, shobshomoy playlist e rakhbe (GitHub er US server e block hole eta kaje lage)
-# verify=True  -> check kore, dead hole bad dibe
-# Naam top 39 er kono channel er sathe mille oi channel er link hishebe shobar age boshbe
-MANUAL_CHANNELS = [
-    ("News 24", "https://tvsen6.aynaott.com/cdgr3tw6WoG7JyRnLbi0/index.m3u8", False),
-]
-
-# Ei link gula kokhono nibe na (link er jekono ongsho dilei hobe). Bhul/mislabeled channel bad dite eikhane add koro
-BLOCK_URLS = [
-    "amg13643-amg13643c1-amgplt0016",     # "News24" (Bangladeshi na, bhul label kora)
-]
-# GitHub source er channel e ei host thakle Bangla group (Bangladesh/Kolkata Movies/Bangla Music) ar top 39 e nibe na
-# (Amagi ityadi FAST platform e BD channel prai nei, kintu naam mile giye bhul channel dhukte pare). Lagbe na hole [] koro
-NOT_BANGLA_HOSTS = ["amagi.tv"]
+GROUP_ORDER = [
+    "Kolkata Movies", "Hindi Movies", "English Movies", "Hindi Music", "English Music",
+    "Bangla Music", "Sports",
+    "Bangladesh", "Bangla (India)", "India", "Pakistan"
+]   # er pore baki shob (Others)
 
 # Sobar upore ei channel gula (ei order e) thakbe
 PRIORITY = [
     ("BTV", "BD"), ("BTV World", "BD"), ("BTV Chattogram", "BD"), ("Somoy TV", "BD"),
     ("Jamuna Television", "BD"), ("Ekattor TV", "BD"), ("Channel 24", "BD"), ("DBC News", "BD"),
-    ("Independent Television", "BD"), ("ATN News", "BD"), ("News 24", "BD"),
+    ("Independent Television", "BD"), ("ATN News", "BD"), ("News24", "BD"),
     ("Channel i", "BD"), ("NTV", "BD"), ("RTV", "BD"), ("ATN Bangla", "BD"), ("Banglavision", "BD"),
     ("Maasranga Television", "BD"), ("Deepto TV", "BD"), ("Boishakhi TV", "BD"), ("Desh TV", "BD"),
     ("Nagorik TV", "BD"), ("GTV", "BD"), ("Asian TV", "BD"), ("SA TV", "BD"), ("Channel 9", "BD"),
@@ -90,10 +79,29 @@ PRIORITY = [
 ]
 GROUP_LABEL = {"BD": "Bangladesh", "IN": "Bangla (India)"}
 
-# Adult content filter (random GitHub playlist e thakte pare)
+# Adult content filter
 BLOCK_WORDS = ["xxx", "adult", "porn", "18+", "erotic", "sex"]
+BLOCK_REGEX = re.compile(rf"\b(?:{'|'.join(re.escape(w) for w in BLOCK_WORDS)})\b", re.I)
+
+# Category Matching Regexes (Precompiled for performance)
+RE_KOLKATA = re.compile(r"\b(jalsha movies|zee bangla cinema|colors bangla cinema|bangla cinema|"
+                        r"bangla movies?|bengali movies?|bengali cinema)\b", re.I)
+RE_MUSIC = re.compile(r"\b(music|song|songs|gaan|mtv|sangeet)\b", re.I)
+RE_MOVIE = re.compile(r"\b(movie|movies|cinema|film|films|flix|hbo|bollywood|hollywood)\b", re.I)
+RE_SPORT = re.compile(r"\b(sport|sports|cricket|football)\b", re.I)
+RE_BN = re.compile(r"\b(bangla|bengali)\b", re.I)
+RE_HI = re.compile(r"\b(hindi|bollywood)\b", re.I)
+RE_EN = re.compile(r"\b(english|hollywood|hbo)\b", re.I)
+RE_BD_MUSIC = re.compile(r"\b(music|gaan|song|sangeet)\b", re.I)
+
+# M3U Parse Regexes
+RE_ATTR_NAME = re.compile(r'tvg-name="([^"]*)"', re.I)
+RE_ATTR_ID = re.compile(r'tvg-id="([^"]*)"', re.I)
+RE_ATTR_LOGO = re.compile(r'tvg-logo="([^"]*)"', re.I)
+RE_ATTR_GROUP = re.compile(r'group-title="([^"]*)"', re.I)
 
 # ------------------------------------------------------------------ http
+socket.setdefaulttimeout(CHECK_TIMEOUT + 4)
 SSL_CTX = ssl.create_default_context()
 SSL_CTX.check_hostname = False
 SSL_CTX.verify_mode = ssl.CERT_NONE
@@ -107,9 +115,12 @@ def log(msg):
 
 
 def http_get(url, headers=None, timeout=15):
-    req = urllib.request.Request(url, headers=headers or HEADERS)
+    h = {**HEADERS, **(headers or {})}
+    req = urllib.request.Request(url, headers=h)
     with urllib.request.urlopen(req, timeout=timeout, context=SSL_CTX) as r:
-        return r.read().decode("utf-8", errors="ignore")
+        # Read maximum 10MB to prevent hanging on live media streams
+        raw_bytes = r.read(10 * 1024 * 1024)
+        return raw_bytes.decode("utf-8", errors="ignore")
 
 
 # ------------------------------------------------------------------ m3u parse
@@ -120,13 +131,24 @@ def parse_m3u(text, source):
         if not line:
             continue
         if line.startswith("#EXTINF"):
-            def attr(k):
-                m = re.search(rf'{k}="([^"]*)"', line, re.I)
-                return m.group(1).strip() if m else ""
-            name = line.rsplit(",", 1)[-1].strip() if "," in line else attr("tvg-name")
-            meta = {"name": name or attr("tvg-name") or "Unknown", "tvg_id": attr("tvg-id"),
-                    "logo": attr("tvg-logo"), "group": attr("group-title") or "Others",
-                    "source": source}
+            m_id = RE_ATTR_ID.search(line)
+            m_name = RE_ATTR_NAME.search(line)
+            m_logo = RE_ATTR_LOGO.search(line)
+            m_group = RE_ATTR_GROUP.search(line)
+
+            tvg_id = m_id.group(1).strip() if m_id else ""
+            tvg_name = m_name.group(1).strip() if m_name else ""
+            logo = m_logo.group(1).strip() if m_logo else ""
+            group = m_group.group(1).strip() if m_group else "Others"
+
+            name = line.rsplit(",", 1)[-1].strip() if "," in line else tvg_name
+            meta = {
+                "name": name or tvg_name or "Unknown",
+                "tvg_id": tvg_id,
+                "logo": logo,
+                "group": group or "Others",
+                "source": source
+            }
         elif meta and not line.startswith("#"):
             if re.match(r"^https?://", line):
                 meta["url"] = line
@@ -161,28 +183,22 @@ def scrape_github():
                 n += 1
         log(f"[GitHub] {group}: {n} channel")
 
-    # 2) Desh wise (India te shudhu INDIA_LANGS er bhasha)
-    for group, url, langs in COUNTRY_SOURCES:
-        allowed = None
-        if langs:
-            allowed = {c["url"].split("|")[0] for lg in langs for c in get(f"{IPTV_BASE}/languages/{lg}.m3u")}
-        n_all = n_keep = 0
-        for c in get(url):
-            n_all += 1
-            if allowed is not None and c["url"].split("|")[0] not in allowed:
-                continue
-            n_keep += 1
-            res.append({**c, "group": "Sports" if "sport" in c["group"].lower() else group})
-        log(f"[GitHub] {group}: {n_keep}/{n_all} channel rakha holo")
+    # 2) Desh wise
+    for group, url in COUNTRY_SOURCES:
+        res.extend({**c, "group": "Sports" if "sport" in c["group"].lower() else group} for c in get(url))
 
-    # 3) Extra playlist (nijer dewa; group naam dekhe regroup hobe)
+    # 3) Extra playlist (original group thakbe)
     for url in EXTRA_PLAYLISTS:
-        res.extend({**c, "extra": True} for c in get(url))
+        res.extend(get(url))
 
     # 4) GitHub code search
     if USE_GITHUB_SEARCH and GITHUB_TOKEN:
-        h = {"User-Agent": "Mozilla/5.0", "Accept": "application/vnd.github+json",
-             "Authorization": f"Bearer {GITHUB_TOKEN}"}
+        h = {
+            "User-Agent": UA,
+            "Accept": "application/vnd.github+json",
+            "Authorization": f"Bearer {GITHUB_TOKEN}",
+            "Referer": "https://github.com/"
+        }
         raws = []
         for page in (1, 2, 3):
             try:
@@ -190,8 +206,11 @@ def scrape_github():
                        urllib.parse.quote("EXTINF extension:m3u") + f"&per_page=50&page={page}")
                 data = json.loads(http_get(api, headers=h, timeout=20))
                 for it in data.get("items", []):
-                    raws.append(it["html_url"].replace("https://github.com/",
-                                "https://raw.githubusercontent.com/").replace("/blob/", "/"))
+                    raws.append(
+                        it["html_url"]
+                        .replace("https://github.com/", "https://raw.githubusercontent.com/")
+                        .replace("/blob/", "/")
+                    )
                 time.sleep(7)  # rate limit
             except Exception as e:
                 log(f"[GitHub search] page {page}: {e}")
@@ -212,10 +231,16 @@ def scrape_github():
         log("[GitHub search] GITHUB_TOKEN nei, search skip kora holo")
     return res
 
+
 def scrape_aynaott():
     base = "https://web.aynaott.com"
-    h = {"User-Agent": UA, "Accept": "application/json, text/plain, */*",
-         "X-Tenant-Id": "019dd92f-107c-7056-9e79-e5233f6e51d9", "Cache-Control": "no-cache"}
+    h = {
+        "User-Agent": UA,
+        "Accept": "application/json, text/plain, */*",
+        "X-Tenant-Id": "019dd92f-107c-7056-9e79-e5233f6e51d9",
+        "Cache-Control": "no-cache",
+        "Referer": "https://web.aynaott.com/"
+    }
     catalog, seen = [], set()
     for page in range(1, 20):
         try:
@@ -249,14 +274,21 @@ def scrape_aynaott():
             url = so.get("url", "") if isinstance(so, dict) else ""
             url = url or rec.get("stream_url") or rec.get("hls") or ""
             if url:
-                return {"name": title, "url": url, "logo": logo, "tvg_id": f"aynaott-{slug}",
-                        "group": "Bangla TV", "source": "AynaOTT"}
+                return {
+                    "name": title,
+                    "url": url,
+                    "logo": logo,
+                    "tvg_id": f"aynaott-{slug}",
+                    "group": "Bangla TV",
+                    "source": "AynaOTT"
+                }
         except Exception:
             pass
         return None
 
     res = []
-    with ThreadPoolExecutor(max_workers=20) as ex:
+    # 12 workers to prevent API rate limits / 429
+    with ThreadPoolExecutor(max_workers=12) as ex:
         for f in as_completed([ex.submit(one, i) for i in catalog]):
             r = f.result()
             if r:
@@ -307,8 +339,12 @@ def scrape_jagobd():
                    ttl.group(1) if ttl and ttl.group(1).strip() else slug).strip()
             nm = re.sub(r'\s*(?:Live|Online|TV Live|Bangla TV|Live TV|Channel)\s*$', '', raw, flags=re.I).strip()
             nm = re.sub(r'[-_]+', ' ', nm).strip().title()
-            cands.append({"slug": slug, "url": url, "name": nm or slug.replace("-", " ").title(),
-                          "logo": img.group(1) if img else ""})
+            cands.append({
+                "slug": slug,
+                "url": url,
+                "name": nm or slug.replace("-", " ").title(),
+                "logo": img.group(1) if img else ""
+            })
     except Exception as e:
         log(f"[JagoBD] homepage error: {e}")
     log(f"[JagoBD] channel link: {len(cands)}")
@@ -339,14 +375,20 @@ def scrape_jagobd():
                     d = re.findall(r'[\'"](https?://[^\'"]+?\.m3u8[^\'"]*)[\'"]', eh)
                     stream = d[0] if d else None
             if stream:
-                return {"name": c["name"], "url": format_jagobd_url(stream), "logo": c["logo"],
-                        "tvg_id": f"jagobd-{c['slug']}", "group": "Bangla TV", "source": "JagoBD"}
+                return {
+                    "name": c["name"],
+                    "url": format_jagobd_url(stream),
+                    "logo": c["logo"],
+                    "tvg_id": f"jagobd-{c['slug']}",
+                    "group": "Bangla TV",
+                    "source": "JagoBD"
+                }
         except Exception:
             pass
         return None
 
     res = []
-    with ThreadPoolExecutor(max_workers=15) as ex:
+    with ThreadPoolExecutor(max_workers=12) as ex:
         for f in as_completed([ex.submit(resolve, c) for c in cands]):
             r = f.result()
             if r:
@@ -356,109 +398,88 @@ def scrape_jagobd():
 
 
 # ------------------------------------------------------------------ stream check
-ALT_UAS = (UA, "VLC/3.0.18 LibVLC/3.0.18", "Lavf/60.3.100", "ExoPlayerLib/2.18.7")
-
-
-def check_stream(raw_url, timeout=CHECK_TIMEOUT, attempts=2, uas=(UA,)):
-    """(alive, latency_sec, reason)"""
+def check_stream(raw_url):
+    """(alive, latency_sec)"""
     if not raw_url:
-        return False, 0, "empty url"
-    base, url, custom_ua = dict(HEADERS), raw_url, False
+        return False, 0
+    headers, url = dict(HEADERS), raw_url.strip()
     if "|" in raw_url:
-        url, extra = raw_url.split("|", 1)
-        url = url.strip()
-        for part in extra.split("&"):
-            if "=" in part:
-                k, v = part.split("=", 1)
-                base[k.strip()] = v.strip()
-                custom_ua = custom_ua or k.strip().lower() == "user-agent"
-    if "jagobd.com" in url and "Referer" not in base:
-        base["Referer"] = "https://www.jagobd.com/"
-    elif "aynaott.com" in url and "Referer" not in base:
-        base["Referer"] = "https://web.aynaott.com/"
+        url_part, extra = raw_url.split("|", 1)
+        url = url_part.strip()
+        for p in extra.split("&"):
+            if "=" in p:
+                k, v = p.split("=", 1)
+                headers[k.strip()] = v.strip()
+    if "jagobd.com" in url and "Referer" not in headers:
+        headers["Referer"] = "https://www.jagobd.com/"
+    elif "aynaott.com" in url and "Referer" not in headers:
+        headers["Referer"] = "https://web.aynaott.com/"
 
-    reason = "unknown"
-    for ua in ((None,) if custom_ua else uas):
-        headers = dict(base)
-        if ua:
-            headers["User-Agent"] = ua
-        for _ in range(attempts):
-            t0 = time.time()
-            try:
-                req = urllib.request.Request(url, headers=headers)
-                with urllib.request.urlopen(req, timeout=timeout, context=SSL_CTX) as r:
-                    ctype = r.headers.get("Content-Type", "").lower()
-                    raw = r.read(2048)
-                    low = raw.decode("utf-8", errors="ignore").strip().lower()
-                    lat = time.time() - t0
-                    if r.status not in (200, 206):
-                        reason = f"HTTP {r.status}"
-                    elif ("<html" in low or "<body" in low) and "#extm3u" not in low:
-                        reason = "html page (block/login)"
-                    elif any(t in low for t in ("#extm3u", "#ext-x-stream-inf", "#extinf",
-                                                "#ext-x-targetduration", "#ext-x-media-sequence")):
-                        return True, lat, "ok"
-                    elif any(v in ctype for v in ("video/", "audio/", "mpegurl", "octet-stream")):
-                        return True, lat, "ok"
-                    elif raw and raw[0] == 0x47:
-                        return True, lat, "ok"
-                    elif (".m3u8" in url or ".ts" in url) and low and not low.startswith("<"):
-                        return True, lat, "ok"
-                    else:
-                        reason = "not a stream"
-                    break                      # content er somossha, retry kore lav nei
-            except urllib.error.HTTPError as e:
-                reason = f"HTTP {e.code}"
-                if e.code in (404, 410):
-                    return False, 0, reason
-                break                          # onno User-Agent diye try korbe
-            except urllib.error.URLError as e:
-                msg = str(e.reason)
-                reason = "timeout" if "timed out" in msg.lower() else f"connect: {msg[:40]}"
-            except TimeoutError:
-                reason = "timeout"
-            except Exception as e:
-                reason = f"error: {type(e).__name__}"
-            time.sleep(0.5)
-    return False, 0, reason
+    for attempt in range(2):
+        t0 = time.time()
+        try:
+            req = urllib.request.Request(url, headers=headers)
+            with urllib.request.urlopen(req, timeout=CHECK_TIMEOUT, context=SSL_CTX) as r:
+                lat = round(time.time() - t0, 3)
+                if r.status not in (200, 206):
+                    return False, lat
+
+                ctype = r.headers.get("Content-Type", "").lower()
+                raw = r.read(2048)
+                sample = raw.decode("utf-8", errors="ignore").strip()
+                low = sample.lower()
+
+                # Fake 200 OK HTML error/login page check
+                if ("<html" in low or "<body" in low or "<!doctype" in low) and "#extm3u" not in low:
+                    return False, lat
+
+                # M3U8 Playlist
+                if any(t in low for t in ("#extm3u", "#ext-x-stream-inf", "#extinf",
+                                          "#ext-x-targetduration", "#ext-x-media-sequence")):
+                    return True, lat
+
+                # Media Content-Type
+                if any(v in ctype for v in ("video/", "audio/", "mpegurl", "octet-stream")):
+                    return True, lat
+
+                # TS Stream sync byte (0x47)
+                if raw and raw[0] == 0x47:
+                    return True, lat
+
+                if (".m3u8" in url or ".ts" in url) and sample and not sample.startswith("<"):
+                    return True, lat
+
+                return False, lat
+        except urllib.error.HTTPError as e:
+            # 502/503/504 might be temporary; retry once. 4xx fails immediately.
+            if e.code in (502, 503, 504) and attempt == 0:
+                time.sleep(0.5)
+                continue
+            return False, 0
+        except Exception:
+            if attempt == 0:
+                time.sleep(0.5)
+                continue
+    return False, 0
 
 
 def check_all(channels):
-    total, done = len(channels), 0
+    total, done, alive = len(channels), 0, []
     with ThreadPoolExecutor(max_workers=WORKERS) as ex:
         fut = {ex.submit(check_stream, c["url"]): c for c in channels}
         for f in as_completed(fut):
             c = fut[f]
             try:
-                ok, lat, reason = f.result()
-            except Exception as e:
-                ok, lat, reason = False, 0, f"error: {type(e).__name__}"
-            c["alive"], c["latency"], c["reason"] = ok, lat, reason
+                ok, lat = f.result()
+            except Exception:
+                ok, lat = False, 0
             done += 1
-            if done % 500 == 0 or done == total:
-                log(f"checked {done}/{total} | alive {sum(1 for x in channels if x.get('alive'))}")
-    dead = Counter(c["reason"] for c in channels if not c.get("alive") and c.get("reason"))
-    log("Dead er karon: " + ", ".join(f"{k}: {v}" for k, v in dead.most_common(8)))
-
-
-def recheck(chs):
-    """Top channel er dead link gula arektu dhoirjo niye (20s, onno User-Agent diye) abar check"""
-    if not chs:
-        return 0
-    revived = 0
-    with ThreadPoolExecutor(max_workers=20) as ex:
-        fut = {ex.submit(check_stream, c["url"], 20, 1, ALT_UAS): c for c in chs}
-        for f in as_completed(fut):
-            c = fut[f]
-            try:
-                ok, lat, reason = f.result()
-            except Exception as e:
-                ok, lat, reason = False, 0, f"error: {type(e).__name__}"
-            c["reason"] = reason
             if ok:
-                c["alive"], c["latency"] = True, lat
-                revived += 1
-    return revived
+                c["latency"] = lat
+                alive.append(c)
+            if done % 500 == 0 or done == total:
+                log(f"checked {done}/{total} | alive {len(alive)}")
+    return alive
 
 
 # ------------------------------------------------------------------ priority matching
@@ -475,87 +496,31 @@ def norm(name):
 
 
 PRIORITY_MAP = {norm(n): (i, n, c) for i, (n, c) in enumerate(PRIORITY)}
-SOURCE_RANK = {"Manual": -1, "AynaOTT": 0, "JagoBD": 1, "GitHub": 2}
-
-SUFFIXES = ("bangladesh", "bangla", "tv", "bd")
-
-
-def pkey(name):
-    """Priority list er kon channel er sathe mile seta (norm key). Naam er sheshe tv/bd/bangla thakleo mile jabe"""
-    k = norm(name)
-    for _ in range(3):
-        if k in PRIORITY_MAP:
-            return k
-        for suf in SUFFIXES:
-            if k.endswith(suf) and len(k) > len(suf):
-                k = k[:-len(suf)]
-                break
-        else:
-            return None
-    return k if k in PRIORITY_MAP else None
-
+SOURCE_RANK = {"AynaOTT": 0, "JagoBD": 1, "GitHub": 2}
 
 
 def is_blocked(c):
-    t = f'{c["name"]} {c.get("group", "")}'.lower()
-    return any(re.search(rf"\b{re.escape(w)}\b", t) for w in BLOCK_WORDS)
-
-
-# ---- bhasha / group sanitize ----
-BANGLA_RE = re.compile(r"bangla|bengali|bengal|bangladesh|\bbd\b|jalsha|\baath\b|ananda|kolkata|calcutta|ghanta|ebela|sangeet bangla")
-HINDI_RE = re.compile(
-    r"\bhindi\b|bollywood|star plus|star bharat|star utsav|star gold|sony sab|\bsab tv\b|sony tv|sony entertainment|"
-    r"sony pal|sony max|sony pix|sony wah|\bcolors\b|colors tv|colors rishtey|colors cineplex|zee tv|zee anmol|zee cinema|"
-    r"zee classic|zee action|zee bollywood|zee news|zee hindustan|&tv|\band tv\b|and pictures|&pictures|dangal|ishara|shemaroo|"
-    r"big magic|bindass|aaj tak|abp news|ndtv|india tv|news18 india|republic bharat|tv9 bharat|dd national|dd news|dd bharati|"
-    r"sanskar|aastha|sadhna|bhojpuri|b4u|mtv india|9xm|9x jalwa|zing|utv|filamchi|goldmines|manoranjan|cineplex|"
-    r"news nation|india news|good news today|bharat 24|\btez\b|zoom tv|mastiii|movie plus|enter10|bflix")
-OTHER_LANG_RE = re.compile(
-    r"tamil|telugu|malayalam|kannada|marathi|punjabi|gujarati|odia|oriya|assamese|konkani|"
-    r"sun tv|vijay|asianet|surya|kairali|maa tv|etv telugu|gemini|raj tv|jaya tv|polimer|"
-    r"arabic|russian|french|german|spanish|turkish|italian|portuguese|polish|greek|dutch|swedish|ukrainian|romanian|"
-    r"farsi|persian|hebrew|japanese|chinese|mandarin|korean|thai|vietnamese|indonesian|tagalog|filipino|"
-    r"al jazeera|al arabiya|\bnhk\b|\bcctv\b|\bkbs\b|\bmbc\b|telemundo|univision")
-# Bangla group e Hindi channel dhukle kothay pathabe
-HINDI_REMAP = {"Bangladesh": "India", "Kolkata Movies": "Hindi Movies", "Bangla Music": "Hindi Music"}
-
-
-def regroup(c):
-    """Nijer dewa playlist er channel er group-title/naam dekhe group thik kora"""
-    kw = keyword_group(c["name"], c.get("group", ""))
-    if kw:
-        return kw
-    g = c.get("group", "").lower()
-    if re.search(r"bangla|bangladesh|\bbd\b|bengali", g):
-        return "Bangladesh"
-    if re.search(r"hindi|india", g):
-        return "India"
-    if "pakistan" in g or "urdu" in g:
-        return "Pakistan"
-    if "sport" in g:
-        return "Sports"
-    return c.get("group") or "Others"
+    t = f'{c["name"]} {c.get("group", "")}'
+    return bool(BLOCK_REGEX.search(t))
 
 
 def bd_group(name):
-    return "Bangla Music" if re.search(r"\b(music|gaan|song|sangeet)\b", name.lower()) else "Bangladesh"
-
-
-KOLKATA_RE = re.compile(r"\b(jalsha movies|zee bangla cinema|colors bangla cinema|bangla cinema|"
-                        r"bangla movies?|bengali movies?|bengali cinema)\b")
+    return "Bangla Music" if RE_BD_MUSIC.search(name) else "Bangladesh"
 
 
 def keyword_group(name, group=""):
     """Random GitHub playlist er channel er jonno naam/group dekhe category bujhe"""
-    t = f"{name} {group}".lower()
-    if KOLKATA_RE.search(t):
+    t = f"{name} {group}"
+    if RE_KOLKATA.search(t):
         return "Kolkata Movies"
-    music = re.search(r"\b(music|song|songs|gaan|mtv)\b", t)
-    movie = re.search(r"\b(movie|movies|cinema|film|films|flix|hbo|bollywood|hollywood)\b", t)
-    sport = re.search(r"\b(sport|sports|cricket|football)\b", t)
-    bn = re.search(r"\b(bangla|bengali)\b", t)
-    hi = re.search(r"\b(hindi|bollywood)\b", t)
-    en = re.search(r"\b(english|hollywood|hbo)\b", t)
+
+    music = RE_MUSIC.search(t)
+    movie = RE_MOVIE.search(t)
+    sport = RE_SPORT.search(t)
+    bn = RE_BN.search(t)
+    hi = RE_HI.search(t)
+    en = RE_EN.search(t)
+
     if music:
         if bn:
             return "Bangla Music"
@@ -591,48 +556,12 @@ def dedupe_by_name(chs, limit):
     return [c for c in chs if id(c) in kept]
 
 
-def short(u, n=60):
-    u = u.split("|")[0]
-    return u if len(u) <= n else u[:n] + "..."
-
-
-def priority_report(items):
-    lines, problems = [], []
-    for idx, (name, _cc) in enumerate(PRIORITY):
-        key = norm(name)
-        exact = [c for c in items if pkey(c["name"]) == key]
-        ok = [c for c in exact if c.get("alive")]
-        if ok:
-            b = min(ok, key=lambda c: (SOURCE_RANK.get(c["source"], 9), c.get("latency", 99)))
-            lines.append(f"OK        {name}: {len(ok)}/{len(exact)} link alive (best: {b['source']})")
-        elif exact:
-            det = " | ".join(f"{c['source']}: {c.get('reason', '?')} [{short(c['url'])}]" for c in exact[:5])
-            msg = f"DEAD      {name}: {len(exact)} link paoa gese, shob dead -> {det}"
-            lines.append(msg); problems.append(msg)
-        else:
-            sim = []
-            for c in items:
-                k2 = norm(c["name"])
-                if not k2:
-                    continue
-                if (len(key) >= 3 and len(k2) >= 3 and (key in k2 or k2 in key)) or \
-                        difflib.SequenceMatcher(None, key, k2).ratio() >= 0.8:
-                    sim.append(c)
-            det = " | ".join(f"'{c['name']}' [{c['source']}, {'alive' if c.get('alive') else c.get('reason', '?')}]"
-                             for c in sim[:5]) or "kisu nai"
-            msg = f"NOT FOUND {name}: kono source e ei naam e nai. Kachakachi naam: {det}"
-            lines.append(msg); problems.append(msg)
-    try:
-        REPORT.write_text("\n".join(lines) + "\n", encoding="utf-8")
-    except Exception:
-        pass
-    return problems
-
-
 # ------------------------------------------------------------------ output
 def write_playlist(top, rest):
     def q(s):
-        return str(s).replace('"', "'").replace("\n", " ")
+        return str(s).replace('"', "'").replace("\n", " ").strip()
+
+    OUTPUT.parent.mkdir(parents=True, exist_ok=True)
     lines = ["#EXTM3U"]
     for c in top + rest:
         lines.append(f'#EXTINF:-1 tvg-id="{q(c.get("tvg_id", ""))}" tvg-name="{q(c["name"])}" '
@@ -649,60 +578,27 @@ def main():
         except Exception as e:
             log(f"[{name}] error: {e}")
 
-    manual = [{"name": n, "url": u, "group": "Others", "logo": "", "tvg_id": "", "source": "Manual",
-               "manual": True, "verify": v} for n, u, v in MANUAL_CHANNELS]
-    if manual:
-        log(f"[Manual] {len(manual)} ta nijer dewa link")
-    pool = manual + pool          # manual age, jate URL duplicate hole manual jite
-
     seen, items = set(), []
     for c in pool:
         raw = c["url"].split("|")[0].strip()
         if not raw or raw in seen or is_blocked(c):
             continue
-        name, lname = c["name"], c["name"].lower()
-        is_top = pkey(name) is not None
         if c["source"] in ("AynaOTT", "JagoBD"):
-            c["group"] = bd_group(name)
+            c["group"] = bd_group(c["name"])
         elif c.get("search"):
-            kw = keyword_group(name, c.get("group", ""))
+            kw = keyword_group(c["name"], c.get("group", ""))
             if kw:
                 c["group"] = kw
-            elif not is_top:
+            elif norm(c["name"]) not in PRIORITY_MAP:
                 continue
-        elif c.get("extra"):
-            c["group"] = regroup(c)
-        if KOLKATA_RE.search(lname):
+        if RE_KOLKATA.search(c["name"]):
             c["group"] = "Kolkata Movies"
-        if any(b in c["url"] for b in BLOCK_URLS) and not c.get("manual"):
-            continue
-        if (c["source"] == "GitHub" and (is_top or c["group"] in HINDI_REMAP)
-                and any(h in c["url"].lower() for h in NOT_BANGLA_HOSTS)):
-            continue
-        if not is_top and not c.get("manual"):
-            if OTHER_LANG_RE.search(lname):            # Tamil/Telugu/Arabic ityadi bad
-                continue
-            if c["group"] in HINDI_REMAP and HINDI_RE.search(lname) and not BANGLA_RE.search(lname):
-                c["group"] = HINDI_REMAP[c["group"]]   # Bangla group e dhuka Hindi channel soriye dewa
-            if STRICT_GROUPS and c["group"] not in GROUP_ORDER:
-                continue
         seen.add(raw)
         items.append(c)
     log(f"Total unique channel: {len(items)}")
 
-    for c in items:               # verify=False wala manual link check chhara alive dhora hobe
-        if c.get("manual") and not c.get("verify"):
-            c["alive"], c["latency"], c["reason"] = True, 0, "manual (not verified)"
-    check_all([c for c in items if not (c.get("manual") and not c.get("verify"))])
-    prio_dead = [c for c in items if not c.get("alive") and pkey(c["name"]) is not None]
-    log(f"Top channel er {len(prio_dead)} ta dead link abar dhoirjo niye check kora hocche...")
-    log(f"Abar check e {recheck(prio_dead)} ta chalu hoise")
-    alive = [c for c in items if c.get("alive")]
+    alive = check_all(items)
     log(f"Alive: {len(alive)} / {len(items)}")
-
-    problems = priority_report(items)
-    for line in problems:
-        log(line)
 
     prev = OUTPUT.read_text(encoding="utf-8", errors="ignore").count("#EXTINF") if OUTPUT.exists() else 0
     if prev >= 20 and len(alive) < prev * MIN_KEEP_RATIO:
@@ -712,25 +608,13 @@ def main():
     # priority bucket
     buckets, rest = {}, []
     for c in alive:
-        hit = PRIORITY_MAP.get(pkey(c["name"]) or "")
+        hit = PRIORITY_MAP.get(norm(c["name"]))
         if hit:
             idx, canon, cc = hit
             c["name"], c["group"] = canon, GROUP_LABEL[cc]
             buckets.setdefault(idx, []).append(c)
         else:
             rest.append(c)
-
-    if PRIORITY_KEEP_DEAD:
-        for idx, (name, cc) in enumerate(PRIORITY):
-            if idx in buckets:
-                continue
-            cands = [c for c in items if not c.get("alive") and pkey(c["name"]) == norm(name)
-                     and c.get("reason") not in ("HTTP 404", "HTTP 410")]
-            if cands:
-                best = min(cands, key=lambda c: SOURCE_RANK.get(c["source"], 9))
-                best["name"], best["group"] = name, GROUP_LABEL[cc]
-                buckets[idx] = [best]
-                log(f"[KEEP] {name}: alive na paleo ({best.get('reason')}) 1 ta link rakha holo")
 
     top = []
     for idx in sorted(buckets):
@@ -740,6 +624,7 @@ def main():
         before = len(rest)
         rest = dedupe_by_name(rest, MAX_LINKS_PER_CHANNEL)
         log(f"Duplicate naam bad: {before} -> {len(rest)}")
+
     # A-Z na, shudhu group order e (group er vitore source er order e thakbe)
     rest.sort(key=lambda c: GROUP_ORDER.index(c["group"]) if c["group"] in GROUP_ORDER else 99)
 
@@ -748,8 +633,6 @@ def main():
     if missing:
         log("Priority te alive paoa jay ni: " + ", ".join(missing))
 
-    cnt = Counter(c["group"] for c in top + rest)
-    log("Group wise channel: " + ", ".join(f"{g}: {n}" for g, n in cnt.most_common()))
     write_playlist(top, rest)
     log(f"{OUTPUT} e {len(top) + len(rest)} ta channel save hoise ({len(top)} ta top e)")
     return 0
