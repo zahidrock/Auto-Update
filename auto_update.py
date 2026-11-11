@@ -11,30 +11,29 @@ from pathlib import Path
 
 # ------------------------------------------------------------------ settings
 OUTPUT = Path("playlist.m3u")
-WORKERS = 60                 # ek sathe koto link check hobe
-CHECK_TIMEOUT = 8            # sekond
-MAX_LINKS_PER_PRIORITY = 1   # top 39 channel er proti channel e max koto alive link (0 = shob)
-MAX_LINKS_PER_CHANNEL = 1    # baki channel er proti naam e max koto link (1 = duplicate nei)
-PRIORITY_KEEP_DEAD = True         # True: top channel er link GitHub e verify hoy ni (timeout/403, BD/BDIX server) tao 1 ta link rakhbe
-KEEP_REASONS = ("timeout", "HTTP 401", "HTTP 403", "HTTP 451", "html page (block/login)")   # shudhu ei karone keep hobe. 404/refused/DNS hole keep hobe na
+WORKERS = 60                 # Concurrent check threads
+CHECK_TIMEOUT = 8            # Seconds
+MAX_LINKS_PER_PRIORITY = 1   # Max alive links per priority channel (0 = all)
+MAX_LINKS_PER_CHANNEL = 1    # Max links per channel name for others
+PRIORITY_KEEP_DEAD = True    # Keep 1 link if blocked/timeout on GitHub runners
+KEEP_REASONS = ("timeout", "HTTP 401", "HTTP 403", "HTTP 451", "html page (block/login)")
 REPORT = Path("priority_report.txt")
-MIN_KEEP_RATIO = 0.5         # alive sonkhya ager playlist er 50% er niche hole overwrite korbe na
+MIN_KEEP_RATIO = 0.5         # Safety overwrite check
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
 
 IPTV_BASE = "https://iptv-org.github.io/iptv"
 
-# Desh wise (shob channel nibe). (group name, m3u link)
-INDIA_LANGS = ("hin", "ben")      # India er list theke shudhu ei bhasha (hin=Hindi, ben=Bangla). Shob bhasha chaile None dao
+# Desh wise
+INDIA_LANGS = ("hin", "ben")
 COUNTRY_SOURCES = [
     ("Bangladesh", f"{IPTV_BASE}/countries/bd.m3u", None),
     ("India",      f"{IPTV_BASE}/countries/in.m3u", INDIA_LANGS),
     ("Pakistan",   f"{IPTV_BASE}/countries/pk.m3u", None),
 ]
 
-# True dile: upore dewa group chhara onno group er channel (top 39 / manual chhara) playlist e rakhbe na
 STRICT_GROUPS = True
 
-# Category + Bhasha: duita lister common channel (group name, category, language code)
+# Category + Language combos
 COMBOS = [
     ("Kolkata Movies", "movies", "ben"),
     ("Hindi Movies",   "movies", "hin"),
@@ -45,37 +44,28 @@ COMBOS = [
     ("Sports",         "sports", ("hin", "eng", "ben")),
 ]
 
-# Nijer extra m3u (ekhane shob channel nibe, original group thakbe)
 EXTRA_PLAYLISTS = [
     "https://raw.githubusercontent.com/zahidrock/zahid/refs/heads/main/tv.m3u8",
 ]
 
-# GitHub code search (GITHUB_TOKEN lagbe). Random playlist theke shudhu movies/music (BD/IN/EN)
-# ar tomar PRIORITY channel gula nibe
 USE_GITHUB_SEARCH = True
 
-# Playlist e group er order
-GROUP_ORDER = ["Kolkata Movies", "Hindi Movies", "English Movies", "Hindi Music", "English Music",
-               "Bangla Music", "Sports",
-               "Bangladesh", "Bangla (India)", "India", "Pakistan"]   # er pore baki shob (Others)
+GROUP_ORDER = [
+    "Kolkata Movies", "Hindi Movies", "English Movies", "Hindi Music", "English Music",
+    "Bangla Music", "Sports",
+    "Bangladesh", "Bangla (India)", "India", "Pakistan"
+]
 
-# Tumi nijer jana link ekhane dao: (naam, link, verify)
-# verify=False -> check korbe na, shobshomoy playlist e rakhbe (GitHub er US server e block hole eta kaje lage)
-# verify=True  -> check kore, dead hole bad dibe
-# Naam top 39 er kono channel er sathe mille oi channel er link hishebe shobar age boshbe
 MANUAL_CHANNELS = [
     ("News 24", "https://tvsen6.aynaott.com/cdgr3tw6WoG7JyRnLbi0/index.m3u8", False),
 ]
 
-# Ei link gula kokhono nibe na (link er jekono ongsho dilei hobe). Bhul/mislabeled channel bad dite eikhane add koro
 BLOCK_URLS = [
-    "amg13643-amg13643c1-amgplt0016",     # "News24" (Bangladeshi na, bhul label kora)
+    "amg13643-amg13643c1-amgplt0016",
 ]
-# GitHub source er channel e ei host thakle Bangla group (Bangladesh/Kolkata Movies/Bangla Music) ar top 39 e nibe na
-# (Amagi ityadi FAST platform e BD channel prai nei, kintu naam mile giye bhul channel dhukte pare). Lagbe na hole [] koro
+
 NOT_BANGLA_HOSTS = ["amagi.tv"]
 
-# Sobar upore ei channel gula (ei order e) thakbe
 PRIORITY = [
     ("BTV", "BD"), ("BTV World", "BD"), ("BTV Chattogram", "BD"), ("Somoy TV", "BD"),
     ("Jamuna Television", "BD"), ("Ekattor TV", "BD"), ("Channel 24", "BD"), ("DBC News", "BD"),
@@ -89,7 +79,7 @@ PRIORITY = [
     ("Star Jalsha", "IN"), ("Zee Bangla", "IN"), ("Colors Bangla", "IN"), ("Sony Aath", "IN"),
     ("Jalsha Movies", "IN"),
 ]
-# Source e onno naame thakle (left = priority er naam, right = onno naam gula)
+
 PRIORITY_ALIASES = {
     "BTV": ["BTV National"],
     "BTV Chattogram": ["BTV CTG", "BTV Chittagong"],
@@ -110,7 +100,6 @@ PRIORITY_ALIASES = {
 
 GROUP_LABEL = {"BD": "Bangladesh", "IN": "Bangla (India)"}
 
-# Adult content filter (random GitHub playlist e thakte pare)
 BLOCK_WORDS = ["xxx", "adult", "porn", "18+", "erotic", "sex"]
 
 # ------------------------------------------------------------------ http
@@ -144,9 +133,13 @@ def parse_m3u(text, source):
                 m = re.search(rf'{k}="([^"]*)"', line, re.I)
                 return m.group(1).strip() if m else ""
             name = line.rsplit(",", 1)[-1].strip() if "," in line else attr("tvg-name")
-            meta = {"name": name or attr("tvg-name") or "Unknown", "tvg_id": attr("tvg-id"),
-                    "logo": attr("tvg-logo"), "group": attr("group-title") or "Others",
-                    "source": source}
+            meta = {
+                "name": name or attr("tvg-name") or "Unknown",
+                "tvg_id": attr("tvg-id"),
+                "logo": attr("tvg-logo"),
+                "group": attr("group-title") or "Others",
+                "source": source
+            }
         elif meta and not line.startswith("#"):
             if re.match(r"^https?://", line):
                 meta["url"] = line
@@ -170,7 +163,7 @@ def scrape_github():
         return cache[url]
 
     res = []
-    # 1) Category x Language (specific group age dewa hoy, jate duplicate hole egulo jite)
+    # 1) Category x Language
     for group, cat, lang in COMBOS:
         langs = (lang,) if isinstance(lang, str) else lang
         lang_urls = {c["url"].split("|")[0] for lg in langs for c in get(f"{IPTV_BASE}/languages/{lg}.m3u")}
@@ -181,7 +174,7 @@ def scrape_github():
                 n += 1
         log(f"[GitHub] {group}: {n} channel")
 
-    # 2) Desh wise (India te shudhu INDIA_LANGS er bhasha)
+    # 2) Country sources
     for group, url, langs in COUNTRY_SOURCES:
         allowed = None
         if langs:
@@ -192,17 +185,20 @@ def scrape_github():
             if allowed is not None and c["url"].split("|")[0] not in allowed:
                 continue
             n_keep += 1
-            res.append({**c, "group": "Sports" if "sport" in c["group"].lower() else group})
+            res.append({**c, "group": "Sports" if "sport" in c.get("group", "").lower() else group})
         log(f"[GitHub] {group}: {n_keep}/{n_all} channel rakha holo")
 
-    # 3) Extra playlist (nijer dewa; group naam dekhe regroup hobe)
+    # 3) Extra playlists
     for url in EXTRA_PLAYLISTS:
         res.extend({**c, "extra": True} for c in get(url))
 
     # 4) GitHub code search
     if USE_GITHUB_SEARCH and GITHUB_TOKEN:
-        h = {"User-Agent": "Mozilla/5.0", "Accept": "application/vnd.github+json",
-             "Authorization": f"Bearer {GITHUB_TOKEN}"}
+        h = {
+            "User-Agent": "Mozilla/5.0",
+            "Accept": "application/vnd.github+json",
+            "Authorization": f"Bearer {GITHUB_TOKEN}"
+        }
         raws = []
         for page in (1, 2, 3):
             try:
@@ -212,7 +208,7 @@ def scrape_github():
                 for it in data.get("items", []):
                     raws.append(it["html_url"].replace("https://github.com/",
                                 "https://raw.githubusercontent.com/").replace("/blob/", "/"))
-                time.sleep(7)  # rate limit
+                time.sleep(7)
             except Exception as e:
                 log(f"[GitHub search] page {page}: {e}")
                 break
@@ -232,10 +228,15 @@ def scrape_github():
         log("[GitHub search] GITHUB_TOKEN nei, search skip kora holo")
     return res
 
+
 def scrape_aynaott():
     base = "https://web.aynaott.com"
-    h = {"User-Agent": UA, "Accept": "application/json, text/plain, */*",
-         "X-Tenant-Id": "019dd92f-107c-7056-9e79-e5233f6e51d9", "Cache-Control": "no-cache"}
+    h = {
+        "User-Agent": UA,
+        "Accept": "application/json, text/plain, */*",
+        "X-Tenant-Id": "019dd92f-107c-7056-9e79-e5233f6e51d9",
+        "Cache-Control": "no-cache"
+    }
     catalog, seen = [], set()
     for page in range(1, 20):
         try:
@@ -269,8 +270,14 @@ def scrape_aynaott():
             url = so.get("url", "") if isinstance(so, dict) else ""
             url = url or rec.get("stream_url") or rec.get("hls") or ""
             if url:
-                return {"name": title, "url": url, "logo": logo, "tvg_id": f"aynaott-{slug}",
-                        "group": "Bangla TV", "source": "AynaOTT"}
+                return {
+                    "name": title,
+                    "url": url,
+                    "logo": logo,
+                    "tvg_id": f"aynaott-{slug}",
+                    "group": "Bangla TV",
+                    "source": "AynaOTT"
+                }
         except Exception:
             pass
         return None
@@ -327,8 +334,12 @@ def scrape_jagobd():
                    ttl.group(1) if ttl and ttl.group(1).strip() else slug).strip()
             nm = re.sub(r'\s*(?:Live|Online|TV Live|Bangla TV|Live TV|Channel)\s*$', '', raw, flags=re.I).strip()
             nm = re.sub(r'[-_]+', ' ', nm).strip().title()
-            cands.append({"slug": slug, "url": url, "name": nm or slug.replace("-", " ").title(),
-                          "logo": img.group(1) if img else ""})
+            cands.append({
+                "slug": slug,
+                "url": url,
+                "name": nm or slug.replace("-", " ").title(),
+                "logo": img.group(1) if img else ""
+            })
     except Exception as e:
         log(f"[JagoBD] homepage error: {e}")
     log(f"[JagoBD] channel link: {len(cands)}")
@@ -359,8 +370,14 @@ def scrape_jagobd():
                     d = re.findall(r'[\'"](https?://[^\'"]+?\.m3u8[^\'"]*)[\'"]', eh)
                     stream = d[0] if d else None
             if stream:
-                return {"name": c["name"], "url": format_jagobd_url(stream), "logo": c["logo"],
-                        "tvg_id": f"jagobd-{c['slug']}", "group": "Bangla TV", "source": "JagoBD"}
+                return {
+                    "name": c["name"],
+                    "url": format_jagobd_url(stream),
+                    "logo": c["logo"],
+                    "tvg_id": f"jagobd-{c['slug']}",
+                    "group": "Bangla TV",
+                    "source": "JagoBD"
+                }
         except Exception:
             pass
         return None
@@ -426,12 +443,12 @@ def check_stream(raw_url, timeout=CHECK_TIMEOUT, attempts=2, uas=(UA,)):
                         return True, lat, "ok"
                     else:
                         reason = "not a stream"
-                    break                      # content er somossha, retry kore lav nei
+                    break
             except urllib.error.HTTPError as e:
                 reason = f"HTTP {e.code}"
                 if e.code in (404, 410):
                     return False, 0, reason
-                break                          # onno User-Agent diye try korbe
+                break
             except urllib.error.URLError as e:
                 msg = str(e.reason)
                 reason = "timeout" if "timed out" in msg.lower() else f"connect: {msg[:40]}"
@@ -462,7 +479,6 @@ def check_all(channels):
 
 
 def recheck(chs):
-    """Top channel er dead link gula arektu dhoirjo niye (20s, onno User-Agent diye) abar check"""
     if not chs:
         return 0
     revived = 0
@@ -487,7 +503,7 @@ NOISE = {"hd", "fhd", "sd", "uhd", "4k", "live", "official", "hevc", "h265", "h2
 
 def norm(name):
     n = name.lower()
-    n = re.sub(r"[\(\[].*?[\)\]]", " ", n)         # (1080p) [Not 24/7]
+    n = re.sub(r"[\(\[].*?[\)\]]", " ", n)
     n = re.sub(r"\b\d{3,4}p\b", " ", n)
     n = n.replace("television", "tv")
     n = re.sub(r"[^a-z0-9\u0980-\u09ff]+", " ", n)
@@ -502,7 +518,6 @@ SUFFIXES = ("bangladesh", "bangla", "tv", "bd")
 
 
 def pkey(name):
-    """Priority list er kon channel er sathe mile seta (canonical key). Alias ar naam er sheshe tv/bd/bangla thakleo mile jabe"""
     k = norm(name)
     for _ in range(3):
         if k in PRIORITY_MAP:
@@ -518,7 +533,6 @@ def pkey(name):
     if k in PRIORITY_MAP:
         return k
     return ALIAS_TO_CANON.get(k)
-
 
 
 def is_blocked(c):
@@ -541,12 +555,11 @@ OTHER_LANG_RE = re.compile(
     r"arabic|russian|french|german|spanish|turkish|italian|portuguese|polish|greek|dutch|swedish|ukrainian|romanian|"
     r"farsi|persian|hebrew|japanese|chinese|mandarin|korean|thai|vietnamese|indonesian|tagalog|filipino|"
     r"al jazeera|al arabiya|\bnhk\b|\bcctv\b|\bkbs\b|\bmbc\b|telemundo|univision")
-# Bangla group e Hindi channel dhukle kothay pathabe
+
 HINDI_REMAP = {"Bangladesh": "India", "Kolkata Movies": "Hindi Movies", "Bangla Music": "Hindi Music"}
 
 
 def regroup(c):
-    """Nijer dewa playlist er channel er group-title/naam dekhe group thik kora"""
     kw = keyword_group(c["name"], c.get("group", ""))
     if kw:
         return kw
@@ -571,7 +584,6 @@ KOLKATA_RE = re.compile(r"\b(jalsha movies|zee bangla cinema|colors bangla cinem
 
 
 def keyword_group(name, group=""):
-    """Random GitHub playlist er channel er jonno naam/group dekhe category bujhe"""
     t = f"{name} {group}".lower()
     if KOLKATA_RE.search(t):
         return "Kolkata Movies"
@@ -599,7 +611,6 @@ def keyword_group(name, group=""):
 
 
 def dedupe_by_name(chs, limit):
-    """Ekoi naam er channel ek bar-i rakhbe (limit ta porjonto). Specific group > desh, tarpor source, tarpor speed"""
     specific = {g for g, _c, _l in COMBOS}
 
     def rank(c):
@@ -633,7 +644,8 @@ def priority_report(items):
         elif exact:
             det = " | ".join(f"{c['source']}: {c.get('reason', '?')} [{short(c['url'])}]" for c in exact[:5])
             msg = f"DEAD      {name}: {len(exact)} link paoa gese, shob dead -> {det}"
-            lines.append(msg); problems.append(msg)
+            lines.append(msg)
+            problems.append(msg)
         else:
             sim = []
             for c in items:
@@ -646,7 +658,8 @@ def priority_report(items):
             det = " | ".join(f"'{c['name']}' [{c['source']}, {'alive' if c.get('alive') else c.get('reason', '?')}]"
                              for c in sim[:5]) or "kisu nai"
             msg = f"NOT FOUND {name}: kono source e ei naam e nai. Kachakachi naam: {det}"
-            lines.append(msg); problems.append(msg)
+            lines.append(msg)
+            problems.append(msg)
     try:
         REPORT.write_text("\n".join(lines) + "\n", encoding="utf-8")
     except Exception:
@@ -674,11 +687,13 @@ def main():
         except Exception as e:
             log(f"[{name}] error: {e}")
 
-    manual = [{"name": n, "url": u, "group": "Others", "logo": "", "tvg_id": "", "source": "Manual",
-               "manual": True, "verify": v} for n, u, v in MANUAL_CHANNELS]
+    manual = [{
+        "name": n, "url": u, "group": "Others", "logo": "", "tvg_id": "", "source": "Manual",
+        "manual": True, "verify": v
+    } for n, u, v in MANUAL_CHANNELS]
     if manual:
         log(f"[Manual] {len(manual)} ta nijer dewa link")
-    pool = manual + pool          # manual age, jate URL duplicate hole manual jite
+    pool = manual + pool
 
     seen, items = set(), []
     for c in pool:
@@ -705,17 +720,17 @@ def main():
                 and any(h in c["url"].lower() for h in NOT_BANGLA_HOSTS)):
             continue
         if not is_top and not c.get("manual"):
-            if OTHER_LANG_RE.search(lname):            # Tamil/Telugu/Arabic ityadi bad
+            if OTHER_LANG_RE.search(lname):
                 continue
             if c["group"] in HINDI_REMAP and HINDI_RE.search(lname) and not BANGLA_RE.search(lname):
-                c["group"] = HINDI_REMAP[c["group"]]   # Bangla group e dhuka Hindi channel soriye dewa
+                c["group"] = HINDI_REMAP[c["group"]]
             if STRICT_GROUPS and c["group"] not in GROUP_ORDER:
                 continue
         seen.add(raw)
         items.append(c)
     log(f"Total unique channel: {len(items)}")
 
-    for c in items:               # verify=False wala manual link check chhara alive dhora hobe
+    for c in items:
         if c.get("manual") and not c.get("verify"):
             c["alive"], c["latency"], c["reason"] = True, 0, "manual (not verified)"
     check_all([c for c in items if not (c.get("manual") and not c.get("verify"))])
@@ -734,7 +749,7 @@ def main():
         log(f"[SAFETY] Alive ({len(alive)}) ager playlist ({prev}) er theke onek kom. Overwrite kora holo na.")
         return 1
 
-    # priority bucket
+    # Priority bucket
     buckets, rest = {}, []
     for c in alive:
         hit = PRIORITY_MAP.get(pkey(c["name"]) or "")
@@ -755,7 +770,7 @@ def main():
             if cands:
                 def keep_rank(c):
                     flat = re.sub(r"[^a-z0-9]", "", c["url"].split("|")[0].lower())
-                    return (0 if key in flat else 1, SOURCE_RANK.get(c["source"], 9))   # link e channel er naam thakle age
+                    return (0 if key in flat else 1, SOURCE_RANK.get(c["source"], 9))
                 best = min(cands, key=keep_rank)
                 best["name"], best["group"] = name, GROUP_LABEL[cc]
                 buckets[idx] = [best]
@@ -769,7 +784,7 @@ def main():
         before = len(rest)
         rest = dedupe_by_name(rest, MAX_LINKS_PER_CHANNEL)
         log(f"Duplicate naam bad: {before} -> {len(rest)}")
-    # A-Z na, shudhu group order e (group er vitore source er order e thakbe)
+
     rest.sort(key=lambda c: GROUP_ORDER.index(c["group"]) if c["group"] in GROUP_ORDER else 99)
 
     missing = [n for i, (n, _c) in enumerate(PRIORITY) if i not in buckets]
