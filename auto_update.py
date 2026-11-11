@@ -11,19 +11,19 @@ from pathlib import Path
 
 # ------------------------------------------------------------------ settings
 OUTPUT = Path("playlist.m3u")
-WORKERS = 60                 # Concurrent check threads
-CHECK_TIMEOUT = 8            # Seconds
-MAX_LINKS_PER_PRIORITY = 1   # Max alive links per priority channel (0 = all)
-MAX_LINKS_PER_CHANNEL = 1    # Max links per channel name for others
-PRIORITY_KEEP_DEAD = True    # Keep 1 link if blocked/timeout on GitHub runners
+WORKERS = 60                 # ek sathe koto link check hobe
+CHECK_TIMEOUT = 8            # sekond
+MAX_LINKS_PER_PRIORITY = 1   # top 39 channel er proti channel e max koto alive link (0 = shob)
+MAX_LINKS_PER_CHANNEL = 1    # baki channel er proti naam e max koto link (1 = duplicate nei)
+PRIORITY_KEEP_DEAD = True    # True: top channel er link GitHub e verify hoy ni (timeout/403, BD/BDIX server) tao 1 ta link rakhbe
 KEEP_REASONS = ("timeout", "HTTP 401", "HTTP 403", "HTTP 451", "html page (block/login)")
 REPORT = Path("priority_report.txt")
-MIN_KEEP_RATIO = 0.5         # Safety overwrite check
+MIN_KEEP_RATIO = 0.5         # alive sonkhya ager playlist er 50% er niche hole overwrite korbe na
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
 
 IPTV_BASE = "https://iptv-org.github.io/iptv"
 
-# Desh wise
+# Desh wise (shob channel nibe). (group name, m3u link)
 INDIA_LANGS = ("hin", "ben")
 COUNTRY_SOURCES = [
     ("Bangladesh", f"{IPTV_BASE}/countries/bd.m3u", None),
@@ -31,9 +31,10 @@ COUNTRY_SOURCES = [
     ("Pakistan",   f"{IPTV_BASE}/countries/pk.m3u", None),
 ]
 
+# True dile: upore dewa group chhara onno group er channel (top 39 / manual chhara) playlist e rakhbe na
 STRICT_GROUPS = True
 
-# Category + Language combos
+# Category + Bhasha: duita lister common channel (group name, category, language code)
 COMBOS = [
     ("Kolkata Movies", "movies", "ben"),
     ("Hindi Movies",   "movies", "hin"),
@@ -44,28 +45,36 @@ COMBOS = [
     ("Sports",         "sports", ("hin", "eng", "ben")),
 ]
 
+# Nijer extra m3u
 EXTRA_PLAYLISTS = [
     "https://raw.githubusercontent.com/zahidrock/zahid/refs/heads/main/tv.m3u8",
 ]
 
 USE_GITHUB_SEARCH = True
 
+# Playlist e group er order
 GROUP_ORDER = [
     "Kolkata Movies", "Hindi Movies", "English Movies", "Hindi Music", "English Music",
     "Bangla Music", "Sports",
     "Bangladesh", "Bangla (India)", "India", "Pakistan"
 ]
 
+# Tumi nijer jana link ekhane dao: (naam, link, verify)
+# verify=False -> check korbe na, shobshomoy playlist e rakhbe (BDIX / token block er jonno best)
 MANUAL_CHANNELS = [
     ("News 24", "https://tvsen6.aynaott.com/cdgr3tw6WoG7JyRnLbi0/index.m3u8", False),
+    ("Channel 9", "https://app24.jagobd.com.bd/c3VydmVyX8RpbEU9Mi8xNy8yMDIxIDU6NDQ6MjcgUE0mdXNlcmlkPTI3MzgmdG9rZW49Y2hhbm5lbDk=/channel9-8.stream/playlist.m3u8", False),
+    ("Nagorik TV", "https://app24.jagobd.com.bd/c3VydmVyX8RpbEU9Mi8xNy8yMDIxIDU6NDQ6MjcgUE0mdXNlcmlkPTI3MzgmdG9rZW49bmFnb3Jpay10dg==/nagoriktv-8.stream/playlist.m3u8", False),
 ]
 
+# Ei link gula kokhono nibe na
 BLOCK_URLS = [
     "amg13643-amg13643c1-amgplt0016",
 ]
 
 NOT_BANGLA_HOSTS = ["amagi.tv"]
 
+# Sobar upore ei channel gula (ei order e) thakbe
 PRIORITY = [
     ("BTV", "BD"), ("BTV World", "BD"), ("BTV Chattogram", "BD"), ("Somoy TV", "BD"),
     ("Jamuna Television", "BD"), ("Ekattor TV", "BD"), ("Channel 24", "BD"), ("DBC News", "BD"),
@@ -80,26 +89,30 @@ PRIORITY = [
     ("Jalsha Movies", "IN"),
 ]
 
+# Source e onno naame thakle
 PRIORITY_ALIASES = {
-    "BTV": ["BTV National"],
+    "BTV": ["BTV National", "BTV Dhaka"],
     "BTV Chattogram": ["BTV CTG", "BTV Chittagong"],
-    "Somoy TV": ["Somoy", "Shomoy TV", "Samoy TV"],
-    "Nagorik TV": ["Nagorik"],
-    "Maasranga Television": ["Maasranga"],
-    "Boishakhi TV": ["Boishakhi", "Baishakhi TV"],
-    "Deepto TV": ["Deepto", "Dipto TV"],
-    "Ekattor TV": ["Ekattor"],
-    "DBC News": ["DBC"],
-    "Channel 9": ["Channel Nine"],
-    "Mohona TV": ["Mohona"],
+    "Somoy TV": ["Somoy", "Shomoy TV", "Samoy TV", "Somoy News"],
+    "Nagorik TV": ["Nagorik", "Nagorik Television", "Nagarik TV", "Nagarik"],
+    "Maasranga Television": ["Maasranga", "Maasranga TV"],
+    "Boishakhi TV": ["Boishakhi", "Baishakhi TV", "Boishakhi Television"],
+    "Deepto TV": ["Deepto", "Dipto TV", "Deepto Television"],
+    "Ekattor TV": ["Ekattor", "Ekattor 71", "71 TV"],
+    "DBC News": ["DBC", "DBC News TV"],
+    "Channel 9": ["Channel Nine", "Channel9", "Channel 9 BD"],
+    "Mohona TV": ["Mohona", "Mohona Television"],
     "Bijoy TV": ["Bijoy"],
-    "Desh TV": ["Desh"],
+    "Desh TV": ["Desh", "Desh Television"],
     "Duronto TV": ["Duronto"],
-    "RTV": ["Rtv Bangla"],
+    "RTV": ["Rtv Bangla", "RTV Live"],
+    "GTV": ["Gazi TV", "Gazi Television"],
+    "Gaan Bangla": ["Gaan Bangla TV", "GB TV"],
 }
 
 GROUP_LABEL = {"BD": "Bangladesh", "IN": "Bangla (India)"}
 
+# Adult content filter
 BLOCK_WORDS = ["xxx", "adult", "porn", "18+", "erotic", "sex"]
 
 # ------------------------------------------------------------------ http
@@ -334,6 +347,7 @@ def scrape_jagobd():
                    ttl.group(1) if ttl and ttl.group(1).strip() else slug).strip()
             nm = re.sub(r'\s*(?:Live|Online|TV Live|Bangla TV|Live TV|Channel)\s*$', '', raw, flags=re.I).strip()
             nm = re.sub(r'[-_]+', ' ', nm).strip().title()
+            nm = re.sub(r'\bTv\b', 'TV', nm)
             cands.append({
                 "slug": slug,
                 "url": url,
