@@ -15,7 +15,8 @@ WORKERS = 60                 # ek sathe koto link check hobe
 CHECK_TIMEOUT = 8            # sekond
 MAX_LINKS_PER_PRIORITY = 1   # top 39 channel er proti channel e max koto alive link (0 = shob)
 MAX_LINKS_PER_CHANNEL = 1    # baki channel er proti naam e max koto link (1 = duplicate nei)
-PRIORITY_KEEP_DEAD = False        # True dile: top channel er kono link alive na paleo (geo-block hote pare) 1 ta link rakhbe
+PRIORITY_KEEP_DEAD = True         # True: top channel er link GitHub e verify hoy ni (timeout/403, BD/BDIX server) tao 1 ta link rakhbe
+KEEP_REASONS = ("timeout", "HTTP 401", "HTTP 403", "HTTP 451", "html page (block/login)")   # shudhu ei karone keep hobe. 404/refused/DNS hole keep hobe na
 REPORT = Path("priority_report.txt")
 MIN_KEEP_RATIO = 0.5         # alive sonkhya ager playlist er 50% er niche hole overwrite korbe na
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
@@ -88,6 +89,25 @@ PRIORITY = [
     ("Star Jalsha", "IN"), ("Zee Bangla", "IN"), ("Colors Bangla", "IN"), ("Sony Aath", "IN"),
     ("Jalsha Movies", "IN"),
 ]
+# Source e onno naame thakle (left = priority er naam, right = onno naam gula)
+PRIORITY_ALIASES = {
+    "BTV": ["BTV National"],
+    "BTV Chattogram": ["BTV CTG", "BTV Chittagong"],
+    "Somoy TV": ["Somoy", "Shomoy TV", "Samoy TV"],
+    "Nagorik TV": ["Nagorik"],
+    "Maasranga Television": ["Maasranga"],
+    "Boishakhi TV": ["Boishakhi", "Baishakhi TV"],
+    "Deepto TV": ["Deepto", "Dipto TV"],
+    "Ekattor TV": ["Ekattor"],
+    "DBC News": ["DBC"],
+    "Channel 9": ["Channel Nine"],
+    "Mohona TV": ["Mohona"],
+    "Bijoy TV": ["Bijoy"],
+    "Desh TV": ["Desh"],
+    "Duronto TV": ["Duronto"],
+    "RTV": ["Rtv Bangla"],
+}
+
 GROUP_LABEL = {"BD": "Bangladesh", "IN": "Bangla (India)"}
 
 # Adult content filter (random GitHub playlist e thakte pare)
@@ -475,24 +495,29 @@ def norm(name):
 
 
 PRIORITY_MAP = {norm(n): (i, n, c) for i, (n, c) in enumerate(PRIORITY)}
+ALIAS_TO_CANON = {norm(a): norm(canon) for canon, alts in PRIORITY_ALIASES.items() for a in alts}
 SOURCE_RANK = {"Manual": -1, "AynaOTT": 0, "JagoBD": 1, "GitHub": 2}
 
 SUFFIXES = ("bangladesh", "bangla", "tv", "bd")
 
 
 def pkey(name):
-    """Priority list er kon channel er sathe mile seta (norm key). Naam er sheshe tv/bd/bangla thakleo mile jabe"""
+    """Priority list er kon channel er sathe mile seta (canonical key). Alias ar naam er sheshe tv/bd/bangla thakleo mile jabe"""
     k = norm(name)
     for _ in range(3):
         if k in PRIORITY_MAP:
             return k
+        if k in ALIAS_TO_CANON:
+            return ALIAS_TO_CANON[k]
         for suf in SUFFIXES:
             if k.endswith(suf) and len(k) > len(suf):
                 k = k[:-len(suf)]
                 break
         else:
             return None
-    return k if k in PRIORITY_MAP else None
+    if k in PRIORITY_MAP:
+        return k
+    return ALIAS_TO_CANON.get(k)
 
 
 
@@ -724,13 +749,17 @@ def main():
         for idx, (name, cc) in enumerate(PRIORITY):
             if idx in buckets:
                 continue
-            cands = [c for c in items if not c.get("alive") and pkey(c["name"]) == norm(name)
-                     and c.get("reason") not in ("HTTP 404", "HTTP 410")]
+            key = norm(name)
+            cands = [c for c in items if not c.get("alive") and pkey(c["name"]) == key
+                     and c.get("reason") in KEEP_REASONS]
             if cands:
-                best = min(cands, key=lambda c: SOURCE_RANK.get(c["source"], 9))
+                def keep_rank(c):
+                    flat = re.sub(r"[^a-z0-9]", "", c["url"].split("|")[0].lower())
+                    return (0 if key in flat else 1, SOURCE_RANK.get(c["source"], 9))   # link e channel er naam thakle age
+                best = min(cands, key=keep_rank)
                 best["name"], best["group"] = name, GROUP_LABEL[cc]
                 buckets[idx] = [best]
-                log(f"[KEEP] {name}: alive na paleo ({best.get('reason')}) 1 ta link rakha holo")
+                log(f"[KEEP] {name}: verify hoy ni ({best.get('reason')}), 1 ta link rakha holo: {short(best['url'])}")
 
     top = []
     for idx in sorted(buckets):
