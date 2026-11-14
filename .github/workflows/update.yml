@@ -2,8 +2,8 @@ name: Update IPTV Playlist
 
 on:
   schedule:
-    - cron: "17 21 * * *"    # UTC 21:17 = BD time raat 3:17
-    - cron: "43 23 * * *"    # UTC 23:43 = BD time bhor 5:43 (backup, jodi uporta GitHub bad dey)
+    - cron: "0 20 * * *"    # UTC 20:00 = BD time raat 2:00 (primary)
+    - cron: "0 23 * * *"    # UTC 23:00 = BD time bhor 5:00 (backup)
   workflow_dispatch:
 
 concurrency:
@@ -12,22 +12,55 @@ concurrency:
 
 permissions:
   contents: write
+  actions: read            # ager run check korar jonno dorkar
 
 jobs:
   update:
     runs-on: ubuntu-latest
     timeout-minutes: 180
     steps:
+      - name: Check if a recent run already did the job
+        id: check
+        if: github.event_name == 'schedule'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          WF_ID=$(gh api "repos/$REPO/actions/runs/$RUN_ID" --jq .workflow_id)
+          SINCE=$(date -u -d '5 hours ago' +%Y-%m-%dT%H:%M:%SZ)
+
+          COUNT=$(gh api "repos/$REPO/actions/workflows/$WF_ID/runs?per_page=30" \
+            --jq "[.workflow_runs[]
+                   | select(.id != $RUN_ID)
+                   | select(.created_at > \"$SINCE\")
+                   | select(.status == \"in_progress\" or .status == \"queued\" or .conclusion == \"success\")
+                  ] | length")
+
+          echo "Recent running/successful runs: $COUNT"
+          if [ "$COUNT" -gt 0 ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "Ager run already cholche ba shesh hoyeche, tai skip kora holo."
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - uses: actions/checkout@v4
+        if: steps.check.outputs.skip != 'true'
+
       - uses: actions/setup-python@v5
+        if: steps.check.outputs.skip != 'true'
         with:
           python-version: "3.12"
+
       - name: Run updater
+        if: steps.check.outputs.skip != 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: python auto_update.py
+
       - name: Commit playlist and report
-        if: always()
+        if: always() && steps.check.outputs.skip != 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
