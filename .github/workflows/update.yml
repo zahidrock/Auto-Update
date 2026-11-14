@@ -2,8 +2,8 @@ name: Update IPTV Playlist
 
 on:
   schedule:
-    - cron: "0 20 * * *"    # UTC 20:00 = BD time raat 2:00 (primary)
-    - cron: "0 23 * * *"    # UTC 23:00 = BD time bhor 5:00 (backup)
+    - cron: "7 20 * * *"    # BD time raat 2:07 (primary)
+    - cron: "3 23 * * *"    # BD time bhor 5:03 (backup)
   workflow_dispatch:
 
 concurrency:
