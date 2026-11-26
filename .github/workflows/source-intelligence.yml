@@ -1,0 +1,34 @@
+name: IPTV Source Intelligence
+
+on:
+  schedule:
+    - cron: "35 20 * * *" # daily 02:35 Bangladesh time
+  workflow_dispatch:
+
+concurrency:
+  group: source-intelligence
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: pip install -r source_intelligence/requirements.txt
+      - name: Run source intelligence
+        run: python source_intelligence/src/main.py
+      - name: Commit database and generated playlists
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add source_intelligence/data source_intelligence/output
+          git diff --cached --quiet || git commit -m "Daily source intelligence update"
+          git push
