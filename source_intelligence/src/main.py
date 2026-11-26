@@ -122,6 +122,17 @@ def category_for(name, group, url, source_url=""):
         return "English TV"
     return "English TV" if group.lower() in ("news", "entertainment", "documentary") else "Uncategorized"
 
+def discover_playlist_refs(body, base_url):
+    # Follow explicit playlist links found in public HTML, Markdown, or JSON indexes.
+    refs = set()
+    candidates = re.findall(r'https?://[^\\s"\\'<>]+|(?:\\./|/)[^\\s"\\'<>]+\\.m3u8?(?:\\?[^\\s"\\'<>]*)?', body, re.I)
+    for candidate in candidates:
+        candidate = candidate.rstrip("),.;]}\\\'")
+        absolute = urljoin(base_url, candidate)
+        if re.search(r'\\.(?:m3u8?|m3u)(?:$|[?#])', absolute, re.I) and is_public_candidate(absolute):
+            refs.add(canonical_url(absolute))
+    return refs
+
 def fetch_source(url):
     try:
         start = time.monotonic()
@@ -168,6 +179,11 @@ def discover(db):
             if error:
                 logging.warning("Source failed %s: %s", requested, error); continue
             entries = parse_playlist(body, final_url)[:SETTINGS["max_channels_per_source"]]
+            for nested in discover_playlist_refs(body, final_url):
+                if depth < SETTINGS["max_recursive_depth"] and nested not in visited:
+                    db.execute("INSERT OR IGNORE INTO sources(url,discovered_from,depth) VALUES(?,?,?)",
+                               (nested, requested, depth + 1))
+                    queue.append((nested, depth + 1))
             for entry in entries:
                 if entry.get("is_source"):
                     nested = entry["url"]
