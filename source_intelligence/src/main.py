@@ -125,11 +125,12 @@ def category_for(name, group, url, source_url=""):
 def discover_playlist_refs(body, base_url):
     # Follow explicit playlist links found in public HTML, Markdown, or JSON indexes.
     refs = set()
-    candidates = re.findall(r'https?://[^\\s"\\'<>]+|(?:\\./|/)[^\\s"\\'<>]+\\.m3u8?(?:\\?[^\\s"\\'<>]*)?', body, re.I)
+    pattern = r"""https?://[^\\s"'<>]+|(?:\\./|/)[^\\s"'<>]+\\.m3u8?(?:\\?[^\\s"'<>]*)?"""
+    candidates = re.findall(pattern, body, re.I)
     for candidate in candidates:
-        candidate = candidate.rstrip("),.;]}\\\'")
+        candidate = candidate.rstrip("),.;]}'")
         absolute = urljoin(base_url, candidate)
-        if re.search(r'\\.(?:m3u8?|m3u)(?:$|[?#])', absolute, re.I) and is_public_candidate(absolute):
+        if re.search(r"\\.(?:m3u8?|m3u)(?:$|[?#])", absolute, re.I) and is_public_candidate(absolute):
             refs.add(canonical_url(absolute))
     return refs
 
