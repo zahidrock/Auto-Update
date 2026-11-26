@@ -1,0 +1,39 @@
+#EXTM3U
+#EXTINF:-1 tvg-name="BET Cinema" tvg-logo="https://images.pluto.tv/channels/58af4c093a41ca9d4ecabe96/colorLogoPNG_1759338280891.png" group-title="Indian Movies",BET Cinema
+https://jmp2.uk/plu-58af4c093a41ca9d4ecabe96.m3u8
+#EXTINF:-1 tvg-name="BET Visionaries" tvg-logo="https://images.pluto.tv/channels/663946c1b18d700008d9c168/colorLogoPNG_1759338795452.png" group-title="Indian Movies",BET Visionaries
+https://jmp2.uk/plu-663946c1b18d700008d9c168.m3u8
+#EXTINF:-1 tvg-name="Bonanza" tvg-logo="https://images.pluto.tv/channels/696e647b07ea70192d49f6a5/colorLogoPNG_1768842647658.png" group-title="Indian Movies",Bonanza
+https://jmp2.uk/plu-68e9913c4a666b9054849832.m3u8
+#EXTINF:-1 tvg-name="Battlestar Galactica" tvg-logo="https://images.pluto.tv/channels/69d7ebff029c431826bd328e/colorLogoPNG_1776982986391.png" group-title="Indian Movies",Battlestar Galactica
+https://jmp2.uk/plu-69d7ebff029c431826bd328e.m3u8
+#EXTINF:-1 tvg-name="90s Throwback" tvg-logo="https://i.imgur.com/KoGko6M.png" group-title="Indian Movies",90s Throwback
+https://jmp2.uk/plu-5f4d86f519358a00072b978e.m3u8
+#EXTINF:-1 tvg-name="80s Rewind" tvg-logo="https://i.imgur.com/nkEeYfI.png" group-title="Indian Movies",80s Rewind
+https://jmp2.uk/plu-5ca525b650be2571e3943c63.m3u8
+#EXTINF:-1 tvg-name="BET Comedy Movies" tvg-logo="https://images.pluto.tv/channels/68c32d88f56983aba40052bd/colorLogoPNG_1759246622596.png" group-title="Indian Movies",BET Comedy Movies
+https://jmp2.uk/plu-68c32d88f56983aba40052bd.m3u8
+#EXTINF:-1 tvg-name="70s Cinema" tvg-logo="https://i.imgur.com/mgXeEE4.png" group-title="Indian Movies",70s Cinema
+https://jmp2.uk/plu-5f4d878d3d19b30007d2e782.m3u8
+#EXTINF:-1 tvg-name="Adrenalina Pura TV (720p)" tvg-logo="https://i.imgur.com/Pvid2iH.png" group-title="Indian Movies",Adrenalina Pura TV (720p)
+https://jmp2.uk/plu-61b793ccf571b80007b7a610.m3u8
+#EXTINF:-1 tvg-name="50 Cent Action (720p)" tvg-logo="https://provider-static.plex.tv/epg/cms/production/bcfb9977-809f-49ae-acc7-430f2c6ffb26/50CentAction_Logo_1500x1000_DarkBG_-_Chris_Connors.png" group-title="Indian Movies",50 Cent Action (720p)
+https://jmp2.uk/plu-68487fb3f212bedacf5a53e3.m3u8
+#EXTINF:-1 tvg-name="00s Replay" tvg-logo="https://images.pluto.tv/channels/62ba60f059624e000781c436/colorLogoPNG.png" group-title="Indian Movies",00s Replay
+https://jmp2.uk/plu-62ba60f059624e000781c436.m3u8
+#EXTINF:-1 tvg-name="Colors Cineplex Superhits (576p)" tvg-logo="https://xstreamcp-assets-msp.streamready.in/assets/LIVETV/LIVECHANNEL/LIVETV_LIVETVCHANNEL_COLORS_CINEPLEX_SUPERHITS/images/LOGO_HD/image.png" group-title="Indian Movies",Colors Cineplex Superhits (576p)
+http://163.61.226.31:9981/stream/channelid/2039746374?profile=pass
+#EXTINF:-1 tvg-name="Star Utsav Movies (576p)" tvg-logo="https://i.imgur.com/k5QHfH2.png" group-title="Indian Movies",Star Utsav Movies (576p)
+http://163.61.226.31:9981/stream/channelid/1225596390?profile=pass
+#EXTINF:-1 tvg-name="Manoranjan Movies (576p)" tvg-logo="https://dtil.tmsimg.com/assets/s143303_ld_h15_aa.png?lock=720x540" group-title="Indian Movies",Manoranjan Movies (576p)
+http://163.61.226.31:9981/stream/channelid/509213855?profile=pass
+#EXTINF:-1 tvg-name="Goldmines Movies (576p)" tvg-logo="https://dtil.tmsimg.com/assets/s142881_ld_h15_aa.png?lock=720x540" group-title="Indian Movies",Goldmines Movies (576p)
+http://163.61.226.31:9981/stream/channelid/1393052638?profile=pass
+#EXTINF:-1 tvg-name="Sony Wah (576p)" tvg-logo="https://dtil.tmsimg.com/assets/s157974_ld_h15_aa.png?lock=720x540" group-title="Indian Movies",Sony Wah (576p)
+http://163.61.226.31:9981/stream/channelid/1743466790?profile=pass
+#EXTINF:-1 tvg-name="Goldmines Bollywood (576p)" tvg-logo="https://i.imgur.com/6mNQ9mM.png" group-title="Indian Movies",Goldmines Bollywood (576p)
+http://163.61.226.31:9981/stream/channelid/1436412639?profile=pass
+#EXTINF:-1 tvg-name="Goldmines (576p)" tvg-logo="https://xstreamcp-assets-msp.streamready.in/assets/LIVETV/LIVECHANNEL/LIVETV_LIVETVCHANNEL_GOLDMINES/images/LOGO_HD/image.png" group-title="Indian Movies",Goldmines (576p)
+http://163.61.226.31:9981/stream/channelid/863672695?profile=pass
+#EXTINF:-1 tvg-name="Colors Cineplex Bollywood (576p)" tvg-logo="https://xstreamcp-assets-msp.streamready.in/assets/LIVETV/LIVECHANNEL/LIVETV_LIVETVCHANNEL_COLORS_CINEPLEX_BOLLYWOOD/images/LOGO_HD/image.png" group-title="Indian Movies",Colors Cineplex Bollywood (576p)
+http://163.61.226.31:9981/stream/channelid/1709941389?profile=pass

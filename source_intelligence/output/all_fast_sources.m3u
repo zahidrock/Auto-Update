@@ -1,0 +1,113 @@
+#EXTM3U
+#EXTINF:-1 tvg-name="Cartoon Network (United States) [Not 24/7;Geo-blocked]" tvg-logo="https://upload.wikimedia.org/wikipedia/commons/thumb/8/80/Cartoon_Network_2010_logo.svg/960px-Cartoon_Network_2010_logo.svg.png" group-title="Kids",Cartoon Network (United States) [Not 24/7;Geo-blocked]
+https://turnerlive.warnermediacdn.com/hls/live/2023160/tooneast/noslate/VIDEO_3_1928000.m3u8
+#EXTINF:-1 tvg-name="Adult Swim West [Not 24/7;Geo-blocked]" tvg-logo="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Adult_Swim_2003_logo.svg/960px-Adult_Swim_2003_logo.svg.png" group-title="English TV",Adult Swim West [Not 24/7;Geo-blocked]
+https://turnerlive.warnermediacdn.com/hls/live/2023185/aswest/noslate/VIDEO_1_5128000.m3u8
+#EXTINF:-1 tvg-name="BET Cinema" tvg-logo="https://images.pluto.tv/channels/58af4c093a41ca9d4ecabe96/colorLogoPNG_1759338280891.png" group-title="Indian Movies",BET Cinema
+https://jmp2.uk/plu-58af4c093a41ca9d4ecabe96.m3u8
+#EXTINF:-1 tvg-name="BET Visionaries" tvg-logo="https://images.pluto.tv/channels/663946c1b18d700008d9c168/colorLogoPNG_1759338795452.png" group-title="Indian Movies",BET Visionaries
+https://jmp2.uk/plu-663946c1b18d700008d9c168.m3u8
+#EXTINF:-1 tvg-name="Bonanza" tvg-logo="https://images.pluto.tv/channels/696e647b07ea70192d49f6a5/colorLogoPNG_1768842647658.png" group-title="Indian Movies",Bonanza
+https://jmp2.uk/plu-68e9913c4a666b9054849832.m3u8
+#EXTINF:-1 tvg-name="Battlestar Galactica" tvg-logo="https://images.pluto.tv/channels/69d7ebff029c431826bd328e/colorLogoPNG_1776982986391.png" group-title="Indian Movies",Battlestar Galactica
+https://jmp2.uk/plu-69d7ebff029c431826bd328e.m3u8
+#EXTINF:-1 tvg-name="Black Family Sitcoms" tvg-logo="https://images.pluto.tv/channels/686d61503484d6073283059d/colorLogoPNG_1752619670829.png" group-title="English TV",Black Family Sitcoms
+https://jmp2.uk/plu-686d61503484d6073283059d.m3u8
+#EXTINF:-1 tvg-name="90s Throwback" tvg-logo="https://i.imgur.com/KoGko6M.png" group-title="Indian Movies",90s Throwback
+https://jmp2.uk/plu-5f4d86f519358a00072b978e.m3u8
+#EXTINF:-1 tvg-name="90's Kids" tvg-logo="https://images.pluto.tv/channels/6452c814939a590008567a3b/colorLogoPNG_1731836283044.png" group-title="Kids",90's Kids
+https://jmp2.uk/plu-6452c814939a590008567a3b.m3u8
+#EXTINF:-1 tvg-name="Big Brother" tvg-logo="https://images.pluto.tv/channels/6661f11a41af6400080e90d8/colorLogoPNG.png" group-title="English TV",Big Brother
+https://jmp2.uk/plu-6661f11a41af6400080e90d8.m3u8
+#EXTINF:-1 tvg-name="80s Rewind" tvg-logo="https://i.imgur.com/nkEeYfI.png" group-title="Indian Movies",80s Rewind
+https://jmp2.uk/plu-5ca525b650be2571e3943c63.m3u8
+#EXTINF:-1 tvg-name="Beyond the Gates" tvg-logo="https://images.pluto.tv/channels/687ff00ff6bc08130f16ab81/colorLogoPNG_1755074273752.png" group-title="English TV",Beyond the Gates
+https://jmp2.uk/plu-687ff00ff6bc08130f16ab81.m3u8
+#EXTINF:-1 tvg-name="90s Kids TV 2" tvg-logo="https://images.pluto.tv/channels/6452c77ed3fdde00080eb3a8/colorLogoPNG.png" group-title="Kids",90s Kids TV 2
+https://jmp2.uk/plu-6452c77ed3fdde00080eb3a8.m3u8
+#EXTINF:-1 tvg-name="Anime x HIDIVE" tvg-logo="https://i.imgur.com/v0BlxCa.png" group-title="English TV",Anime x HIDIVE
+https://jmp2.uk/plu-6793eaa4bc03978b9bc63db1.m3u8
+#EXTINF:-1 tvg-name="Bar Rescue" tvg-logo="https://images.pluto.tv/channels/655f2ee6c0fc88000877d26c/colorLogoPNG.png" group-title="English TV",Bar Rescue
+https://jmp2.uk/plu-60a3d889a5b3690008dc7fe8.m3u8
+#EXTINF:-1 tvg-name="Bellator MMA" tvg-logo="https://i.imgur.com/VBKoLHk.png" group-title="Sports",Bellator MMA
+https://jmp2.uk/plu-5ebc8688f3697d00072f7cf8.m3u8
+#EXTINF:-1 tvg-name="BET Comedy Movies" tvg-logo="https://images.pluto.tv/channels/68c32d88f56983aba40052bd/colorLogoPNG_1759246622596.png" group-title="Indian Movies",BET Comedy Movies
+https://jmp2.uk/plu-68c32d88f56983aba40052bd.m3u8
+#EXTINF:-1 tvg-name="Cheers + Frasier" tvg-logo="https://images.pluto.tv/channels/66ba495ffe11e5000881f049/colorLogoPNG.png" group-title="English TV",Cheers + Frasier
+https://jmp2.uk/plu-66ba495ffe11e5000881f049.m3u8
+#EXTINF:-1 tvg-name="Beverly Hillbillies" tvg-logo="https://i.imgur.com/OV9hT93.png" group-title="English TV",Beverly Hillbillies
+https://jmp2.uk/plu-5f7796e470510900070d4e3d.m3u8
+#EXTINF:-1 tvg-name="70s Cinema" tvg-logo="https://i.imgur.com/mgXeEE4.png" group-title="Indian Movies",70s Cinema
+https://jmp2.uk/plu-5f4d878d3d19b30007d2e782.m3u8
+#EXTINF:-1 tvg-name="Adrenalina Pura TV (720p)" tvg-logo="https://i.imgur.com/Pvid2iH.png" group-title="Indian Movies",Adrenalina Pura TV (720p)
+https://jmp2.uk/plu-61b793ccf571b80007b7a610.m3u8
+#EXTINF:-1 tvg-name="Black Ink Crew" tvg-logo="https://i.imgur.com/QnuIVB6.png" group-title="English TV",Black Ink Crew
+https://jmp2.uk/plu-5d51e2bceca5b4b2c0e06c50.m3u8
+#EXTINF:-1 tvg-name="CBS en espanol" tvg-logo="https://images.pluto.tv/channels/668c5cb4f01dbe0008dd4082/colorLogoPNG.png" group-title="English TV",CBS en espanol
+https://jmp2.uk/plu-668c5cb4f01dbe0008dd4082.m3u8
+#EXTINF:-1 tvg-name="America's Voice News (720p)" tvg-logo="https://i.imgur.com/C4w0eYC.png" group-title="English TV",America's Voice News (720p)
+https://jmp2.uk/plu-5e1f7da4bc7d740009831259.m3u8
+#EXTINF:-1 tvg-name="50 Cent Action (720p)" tvg-logo="https://provider-static.plex.tv/epg/cms/production/bcfb9977-809f-49ae-acc7-430f2c6ffb26/50CentAction_Logo_1500x1000_DarkBG_-_Chris_Connors.png" group-title="Indian Movies",50 Cent Action (720p)
+https://jmp2.uk/plu-68487fb3f212bedacf5a53e3.m3u8
+#EXTINF:-1 tvg-name="BET Throwbacks" tvg-logo="https://images.pluto.tv/channels/61326275b3c86a00078e4833/colorLogoPNG_1759340015358.png" group-title="English TV",BET Throwbacks
+https://jmp2.uk/plu-61326275b3c86a00078e4833.m3u8
+#EXTINF:-1 tvg-name="America's Next Top Model" tvg-logo="https://images.pluto.tv/channels/68679fc6bb46d0bdd38ac9a4/colorLogoPNG_1756466390265.png" group-title="English TV",America's Next Top Model
+https://jmp2.uk/plu-68757c45759366af05b3b199.m3u8
+#EXTINF:-1 tvg-name="00s Replay" tvg-logo="https://images.pluto.tv/channels/62ba60f059624e000781c436/colorLogoPNG.png" group-title="Indian Movies",00s Replay
+https://jmp2.uk/plu-62ba60f059624e000781c436.m3u8
+#EXTINF:-1 tvg-name="Blaze Live (720p)" tvg-logo="https://i.imgur.com/GwxneSQ.png" group-title="English TV",Blaze Live (720p)
+https://jmp2.uk/plu-5e46fba0c43b0d00096e5ac1.m3u8
+#EXTINF:-1 tvg-name="Acapulco Shore US" tvg-logo="https://images.pluto.tv/channels/61a52615cbef2500072876e2/colorLogoPNG_1756972226445.png" group-title="English TV",Acapulco Shore US
+https://jmp2.uk/plu-64dab1f835425100080e1e7b.m3u8
+#EXTINF:-1 tvg-name="CBS News 24/7 (720p)" tvg-logo="https://upload.wikimedia.org/wikipedia/commons/thumb/b/b0/CBS_News_247_logo.svg/960px-CBS_News_247_logo.svg.png" group-title="English TV",CBS News 24/7 (720p)
+https://jmp2.uk/plu-6350fdd266e9ea0007bedec5.m3u8
+#EXTINF:-1 tvg-name="CBS Sports HQ (720p)" tvg-logo="https://i.imgur.com/q8BENJg.png" group-title="Sports",CBS Sports HQ (720p)
+https://jmp2.uk/plu-5e9f2c05172a0f0007db4786.m3u8
+#EXTINF:-1 tvg-name="BET Classics Pluto TV" tvg-logo="https://images.pluto.tv/channels/60f85644a9493e0007a1f035/colorLogoPNG_1759339662769.png" group-title="English TV",BET Classics Pluto TV
+https://jmp2.uk/plu-60f85644a9493e0007a1f035.m3u8
+#EXTINF:-1 tvg-name="America's Test Kitchen (720p)" tvg-logo="https://i.imgur.com/prMkTsZ.png" group-title="English TV",America's Test Kitchen (720p)
+https://jmp2.uk/plu-5e84f54a82f05300080e6746.m3u8
+#EXTINF:-1 tvg-name="Car Chase (720p)" tvg-logo="https://images.pluto.tv/channels/65244c403fd33c0008ffff31/colorLogoPNG.png" group-title="English TV",Car Chase (720p)
+https://jmp2.uk/plu-65244c403fd33c0008ffff31.m3u8
+#EXTINF:-1 tvg-name="Animax Asia India (1080p) [Geo-blocked]" tvg-logo="https://jiotvimages.cdn.jio.com/dare_images/images/Animax.png" group-title="Indian TV",Animax Asia India (1080p) [Geo-blocked]
+https://amg02159-kcglobal-amg02159c1-samsung-in-521.playouts.now.amagi.tv/playlist/amg02159-kcglobal-animax-samsungin/playlist.m3u8
+#EXTINF:-1 tvg-name="Colors Cineplex Superhits (576p)" tvg-logo="https://xstreamcp-assets-msp.streamready.in/assets/LIVETV/LIVECHANNEL/LIVETV_LIVETVCHANNEL_COLORS_CINEPLEX_SUPERHITS/images/LOGO_HD/image.png" group-title="Indian Movies",Colors Cineplex Superhits (576p)
+http://163.61.226.31:9981/stream/channelid/2039746374?profile=pass
+#EXTINF:-1 tvg-name="Star Utsav Movies (576p)" tvg-logo="https://i.imgur.com/k5QHfH2.png" group-title="Indian Movies",Star Utsav Movies (576p)
+http://163.61.226.31:9981/stream/channelid/1225596390?profile=pass
+#EXTINF:-1 tvg-name="DD National (576p)" tvg-logo="https://ltsk-cdn.s3.eu-west-1.amazonaws.com/jumpstart/Temp_Live/cdn/HLS/Channel/transparentImages/DD%20National.png" group-title="English TV",DD National (576p)
+http://163.61.226.31:9981/stream/channelid/1991369999?profile=pass
+#EXTINF:-1 tvg-name="Manoranjan Movies (576p)" tvg-logo="https://dtil.tmsimg.com/assets/s143303_ld_h15_aa.png?lock=720x540" group-title="Indian Movies",Manoranjan Movies (576p)
+http://163.61.226.31:9981/stream/channelid/509213855?profile=pass
+#EXTINF:-1 tvg-name="Aastha (576p)" tvg-logo="https://i.imgur.com/IqgrV92.png" group-title="Uncategorized",Aastha (576p)
+http://163.61.226.31:9981/stream/channelid/565086134?profile=pass
+#EXTINF:-1 tvg-name="DD Punjabi (576p)" tvg-logo="https://dtil.tmsimg.com/assets/s142800_ld_h15_aa.png?lock=720x540" group-title="Uncategorized",DD Punjabi (576p)
+http://163.61.226.31:9981/stream/channelid/2094424586?profile=pass
+#EXTINF:-1 tvg-name="Republic Bharat (576p)" tvg-logo="https://dtil.tmsimg.com/assets/s143724_ld_h15_aa.png?lock=720x540" group-title="English TV",Republic Bharat (576p)
+http://163.61.226.31:9981/stream/channelid/1090287783?profile=pass
+#EXTINF:-1 tvg-name="Star Utsav (576p)" tvg-logo="https://i.imgur.com/H1jhHDl.png" group-title="English TV",Star Utsav (576p)
+http://163.61.226.31:9981/stream/channelid/894286890?profile=pass
+#EXTINF:-1 tvg-name="Sony Pal (576p)" tvg-logo="https://dtil.tmsimg.com/assets/s157973_ld_h15_aa.png?lock=720x540" group-title="English TV",Sony Pal (576p)
+http://163.61.226.31:9981/stream/channelid/1571254341?profile=pass
+#EXTINF:-1 tvg-name="Colors Rishtey (576p)" tvg-logo="https://xstreamcp-assets-msp.streamready.in/assets/LIVETV/LIVECHANNEL/LIVETV_LIVETVCHANNEL_COLORS_RISHTEY/images/LOGO_HD/LOGO_HD_image.png" group-title="Uncategorized",Colors Rishtey (576p)
+http://163.61.226.31:9981/stream/channelid/297962113?profile=pass
+#EXTINF:-1 tvg-name="Goldmines Movies (576p)" tvg-logo="https://dtil.tmsimg.com/assets/s142881_ld_h15_aa.png?lock=720x540" group-title="Indian Movies",Goldmines Movies (576p)
+http://163.61.226.31:9981/stream/channelid/1393052638?profile=pass
+#EXTINF:-1 tvg-name="Sony Wah (576p)" tvg-logo="https://dtil.tmsimg.com/assets/s157974_ld_h15_aa.png?lock=720x540" group-title="Indian Movies",Sony Wah (576p)
+http://163.61.226.31:9981/stream/channelid/1743466790?profile=pass
+#EXTINF:-1 tvg-name="Goldmines Bollywood (576p)" tvg-logo="https://i.imgur.com/6mNQ9mM.png" group-title="Indian Movies",Goldmines Bollywood (576p)
+http://163.61.226.31:9981/stream/channelid/1436412639?profile=pass
+#EXTINF:-1 tvg-name="Goldmines (576p)" tvg-logo="https://xstreamcp-assets-msp.streamready.in/assets/LIVETV/LIVECHANNEL/LIVETV_LIVETVCHANNEL_GOLDMINES/images/LOGO_HD/image.png" group-title="Indian Movies",Goldmines (576p)
+http://163.61.226.31:9981/stream/channelid/863672695?profile=pass
+#EXTINF:-1 tvg-name="AFV (1080p)" tvg-logo="https://i.imgur.com/TOB9vmW.png" group-title="Uncategorized",AFV (1080p)
+https://linear-1208.frequency.stream/mt/vizio/1208/hls/master/playlist.m3u8
+#EXTINF:-1 tvg-name="Colors Cineplex Bollywood (576p)" tvg-logo="https://xstreamcp-assets-msp.streamready.in/assets/LIVETV/LIVECHANNEL/LIVETV_LIVETVCHANNEL_COLORS_CINEPLEX_BOLLYWOOD/images/LOGO_HD/image.png" group-title="Indian Movies",Colors Cineplex Bollywood (576p)
+http://163.61.226.31:9981/stream/channelid/1709941389?profile=pass
+#EXTINF:-1 tvg-name="Unique TV (576p)" tvg-logo="https://jiotvimages.cdn.jio.com/dare_images/images/Unique_Tv.png" group-title="Kids",Unique TV (576p)
+http://163.61.226.31:9981/stream/channelid/1687023184?profile=pass
+#EXTINF:-1 tvg-name="Bounce XL (1080p)" tvg-logo="https://i.imgur.com/GzxgSkc.png" group-title="English TV",Bounce XL (1080p)
+https://cdn-uw2-prod.tsv2.amagi.tv/linear/amg01438-ewscrippscompan-bouncexl-tablo/playlist.m3u8
+#EXTINF:-1 tvg-name="Q TV (576p)" tvg-logo="https://www.theq.tv/wp-content/uploads/2023/10/The-Q-new-Logo.png" group-title="English TV",Q TV (576p)
+http://163.61.226.31:9981/stream/channelid/359164420?profile=pass
+#EXTINF:-1 tvg-name="Mango Mobile TV (1080p)" tvg-logo="https://dvvlqr1rtlak3.cloudfront.net/Mango/MANGOTVLOGO.jpg" group-title="English TV",Mango Mobile TV (1080p)
+https://amg01911-mangotv-amg01911c1-xiaomi-in-1270.playouts.now.amagi.tv/playlist/amg01911-mangomassmedia-mangotv-xiaomiin/playlist.m3u8
