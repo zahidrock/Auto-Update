@@ -45,6 +45,14 @@ def connect():
     );
     CREATE INDEX IF NOT EXISTS idx_links_channel ON links(channel_id);
     """)
+    # Migrate registries created by earlier runs before last_checked was added.
+    columns = {row[1] for row in db.execute("PRAGMA table_info(links)")}
+    if "last_checked" not in columns:
+        db.execute("ALTER TABLE links ADD COLUMN last_checked TEXT")
+    source_columns = {row[1] for row in db.execute("PRAGMA table_info(sources)")}
+    if "last_checked" not in source_columns:
+        db.execute("ALTER TABLE sources ADD COLUMN last_checked TEXT")
+    db.commit()
     return db
 
 def canonical_url(url):
@@ -98,7 +106,7 @@ def category_for(name, group, url, source_url=""):
     rules = SETTINGS.get("categories", {})
     if any(x in hay for x in ("bangladesh", "bangla", "bd-", "bd/", "/bd.m3u")):
         return "Bangladesh TV"
-    if any(x in hay for x in ("india", "indian", "hindi", "tamil", "telugu", "bengali", "kolkata")):
+    if any(x in hay for x in ("india", "indian", "hindi", "hin.m3u", "tamil", "telugu", "bengali", "ben.m3u", "kolkata")):
         if "movie" in hay or "cinema" in hay: return "Indian Movies"
         if "music" in hay: return "Indian Music"
         return "Indian TV"
@@ -110,7 +118,7 @@ def category_for(name, group, url, source_url=""):
         return "English Movies" if any(x in hay for x in ("english", "eng", "hollywood")) else "Indian Movies"
     if "music" in hay:
         return "English Music" if any(x in hay for x in ("english", "eng")) else "Indian Music"
-    if any(x in hay for x in ("english", "eng", "usa", "uk", "united states", "united kingdom")):
+    if any(x in hay for x in ("english", "eng.m3u", "usa", "uk", "united states", "united kingdom")):
         return "English TV"
     return "English TV" if group.lower() in ("news", "entertainment", "documentary") else "Uncategorized"
 
