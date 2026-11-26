@@ -85,10 +85,10 @@ def parse_playlist(text, source_url):
                                 "url": canonical_url(line), "source_url": source_url, "is_source": True})
     return entries
 
-def category_for(name, group, url):
-    hay = " ".join((name, group, url)).lower()
+def category_for(name, group, url, source_url=""):
+    hay = " ".join((name, group, url, source_url)).lower()
     rules = SETTINGS.get("categories", {})
-    if any(x in hay for x in ("bangladesh", "bangla", "bd-", "bd/")):
+    if any(x in hay for x in ("bangladesh", "bangla", "bd-", "bd/", "/bd.m3u")):
         return "Bangladesh TV"
     if any(x in hay for x in ("india", "indian", "hindi", "tamil", "telugu", "bengali", "kolkata")):
         if "movie" in hay or "cinema" in hay: return "Indian Movies"
@@ -123,7 +123,7 @@ def fetch_source(url):
 
 def add_channel(db, entry):
     name = entry.get("name") or "Unknown"
-    cat = category_for(name, entry.get("category", ""), entry["url"])
+    cat = category_for(name, entry.get("category", ""), entry["url"], entry.get("source_url", ""))
     norm = re.sub(r"[^a-z0-9]+", "", name.lower())
     db.execute("""INSERT OR IGNORE INTO channels(name,tvg_id,logo,category,normalized_name)
                   VALUES(?,?,?,?,?)""", (name, entry.get("tvg_id",""), entry.get("logo",""), cat, norm))
@@ -179,7 +179,7 @@ def check_link(row):
             elapsed = max(time.monotonic() - start, 0.001)
             rate = len(sample) / elapsed
             is_hls = ".m3u8" in url.lower() or "mpegurl" in ctype or sample.lstrip().startswith(b"#EXTM3U")
-            segment_ok = 0
+            segment_ok = 0 if is_hls else 1
             if is_hls and sample:
                 manifest = sample.decode("utf-8", errors="ignore")
                 segment = next((x.strip() for x in manifest.splitlines()
