@@ -108,7 +108,7 @@ def parse_playlist(text, source_url):
                 "name": name or attrs.get("tvg-name") or "Unknown",
                 "tvg_id": attrs.get("tvg-id", ""),
                 "logo": attrs.get("tvg-logo", ""),
-                "category": attrs.get("group-title", "Uncategorized"),
+                "category": attrs.get("group-title", "Uncategorized"),\n                "country": attrs.get("tvg-country", ""),\n                "language": attrs.get("tvg-language", ""),
             }
         elif line.startswith(("http://", "https://")):
             if meta:
@@ -120,26 +120,45 @@ def parse_playlist(text, source_url):
                                 "url": canonical_url(line), "source_url": source_url, "is_source": True})
     return entries
 
-def category_for(name, group, url, source_url=""):
-    hay = " ".join((name, group, url, source_url)).lower()
-    rules = SETTINGS.get("categories", {})
-    if any(x in hay for x in ("bangladesh", "bangla", "bd-", "bd/", "/bd.m3u")):
-        return "Bangladesh TV"
-    if any(x in hay for x in ("india", "indian", "hindi", "hin.m3u", "tamil", "telugu", "bengali", "ben.m3u", "kolkata")):
-        if "movie" in hay or "cinema" in hay: return "Indian Movies"
-        if "music" in hay: return "Indian Music"
-        return "Indian TV"
-    if any(x in hay for x in ("kids", "children", "cartoon", "nick", "disney")):
+def category_for(name, group, url, source_url="", country="", language=""):
+    # Use explicit channel metadata and source indexes; do not guess a language
+    # from generic "movies" or "music" feeds.
+    hay = " ".join((name, group, url, source_url, country, language)).lower()
+    path = urlparse(source_url).path.lower()
+    country_code = country.lower().strip()
+    language_code = language.lower().strip()
+    is_bd = country_code in ("bd", "bgd") or language_code in ("ben-bd", "bn-bd") or any(
+        x in hay for x in ("bangladesh", "bangla", "/bd.m3u", "countries/bd"))
+    is_india = country_code in ("in", "ind") or language_code in (
+        "hin", "tam", "tel", "kan", "mal", "mar", "guj", "ori", "asm", "pan"
+    ) or any(x in hay for x in ("india", "indian", "hindi", "tamil", "telugu", "kolkata", "countries/in"))
+    is_english = language_code in ("eng", "en", "english") or any(
+        x in hay for x in ("english", "hollywood", "languages/eng", "countries/gb", "countries/us",
+                           "countries/ca", "countries/au", "countries/nz")
+    )
+    is_kids = any(x in hay for x in ("kids", "children", "cartoon", "nick", "disney", "animation"))
+    is_sports = any(x in hay for x in ("sport", "cricket", "football", "tennis", "formula 1"))
+    is_movie = any(x in hay for x in ("movie", "movies", "cinema", "film", "hollywood"))
+    is_music = any(x in hay for x in ("music", "musical", "mtv", "vevo"))
+    if is_kids:
         return "Kids"
-    if any(x in hay for x in ("sport", "cricket", "football", "tennis")):
+    if is_sports:
         return "Sports"
-    if "movie" in hay or "cinema" in hay:
-        return "English Movies" if any(x in hay for x in ("english", "eng", "hollywood")) else "Indian Movies"
-    if "music" in hay:
-        return "English Music" if any(x in hay for x in ("english", "eng")) else "Indian Music"
-    if any(x in hay for x in ("english", "eng.m3u", "usa", "uk", "united states", "united kingdom")):
+    if is_bd:
+        return "Bangladesh TV"
+    if is_movie:
+        if is_india: return "Indian Movies"
+        if is_english: return "English Movies"
+        return "Uncategorized"
+    if is_music:
+        if is_india: return "Indian Music"
+        if is_english: return "English Music"
+        return "Uncategorized"
+    if is_india:
+        return "Indian TV"
+    if is_english:
         return "English TV"
-    return "English TV" if group.lower() in ("news", "entertainment", "documentary") else "Uncategorized"
+    return "Uncategorized"
 
 def discover_playlist_refs(body, base_url):
     # Follow explicit playlist links found in public HTML, Markdown, or JSON indexes.
@@ -170,7 +189,7 @@ def fetch_source(url):
 
 def add_channel(db, entry):
     name = entry.get("name") or "Unknown"
-    cat = category_for(name, entry.get("category", ""), entry["url"], entry.get("source_url", ""))
+    cat = category_for(name, entry.get("category", ""), entry["url"], entry.get("source_url", ""),\n                       entry.get("country", ""), entry.get("language", ""))
     norm = re.sub(r"[^a-z0-9]+", "", name.lower())
     db.execute("""INSERT OR IGNORE INTO channels(name,tvg_id,logo,category,normalized_name)
                   VALUES(?,?,?,?,?)""", (name, entry.get("tvg_id",""), entry.get("logo",""), cat, norm))
@@ -286,11 +305,15 @@ def generate(db):
                          WHERE l.status IN ('fast','slow') ORDER BY l.bytes_per_second DESC""").fetchall()
     best = {}
     for name,logo,cat,url,status,speed,ttfb in base:
-        key = re.sub(r"[^a-z0-9]+","",name.lower())
-        if key not in best or (status=="fast" and best[key][4]!="fast"):
-            best[key] = (name,logo,cat,url,status,speed,ttfb)
+        key = (re.sub(r"[^a-z0-9]+","",name.lower()), cat)
+        candidate = (name,logo,cat,url,status,speed,ttfb)
+        current = best.get(key)
+        if current is None or (status == "fast" and current[4] != "fast") or (
+            status == current[4] and (speed or 0) > (current[5] or 0)
+        ):
+            best[key] = candidate
     fast = [x for x in best.values() if x[4]=="fast"]
-    all_fast = [x[:4] for x in base if x[4]=="fast"]
+    all_fast = list({x[3]: x[:4] for x in base if x[4]=="fast"}.values())
     write_playlist(OUT_DIR/"combined.m3u", [x[:4] for x in fast])
     write_playlist(OUT_DIR/"all_fast_sources.m3u", all_fast)
     write_playlist(OUT_DIR/"backup_slow.m3u", [x[:4] for x in best.values() if x[4]=="slow"])
