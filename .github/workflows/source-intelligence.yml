@@ -1,6 +1,15 @@
 name: IPTV Source Intelligence
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - "source_intelligence/src/**"
+      - "source_intelligence/config/**"
+      - "source_intelligence/requirements.txt"
+      - ".github/workflows/source-intelligence.yml"
+      - "!source_intelligence/data/**"
+      - "!source_intelligence/output/**"
   schedule:
     - cron: "35 20 * * *" # daily 02:35 Bangladesh time
   workflow_dispatch:
