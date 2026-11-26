@@ -16,7 +16,7 @@ on:
 
 concurrency:
   group: source-intelligence
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 permissions:
   contents: write
