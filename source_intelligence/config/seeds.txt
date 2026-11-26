@@ -1,0 +1,9 @@
+# One public playlist/index URL per line. Add only sources you are allowed to use.
+https://iptv-org.github.io/iptv/countries/bd.m3u
+https://iptv-org.github.io/iptv/countries/in.m3u
+https://iptv-org.github.io/iptv/countries/gb.m3u
+https://iptv-org.github.io/iptv/countries/us.m3u
+https://iptv-org.github.io/iptv/categories/movies.m3u
+https://iptv-org.github.io/iptv/categories/music.m3u
+https://iptv-org.github.io/iptv/categories/sports.m3u
+https://iptv-org.github.io/iptv/categories/kids.m3u
