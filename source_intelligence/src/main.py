@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import concurrent.futures
+import ipaddress
 import json
 import logging
 import re
@@ -11,6 +12,8 @@ from pathlib import Path
 from urllib.parse import urljoin, urlparse
 
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
 ROOT = Path(__file__).resolve().parents[1]
 REPO = ROOT.parent
@@ -20,6 +23,13 @@ OUT_DIR = REPO / SETTINGS["output_dir"]
 SEEDS = ROOT / "config/seeds.txt"
 UA = "Mozilla/5.0 (compatible; PublicStreamResearch/1.0)"
 SESSION = requests.Session()
+retry = Retry(total=3, connect=3, read=2, status=3, backoff_factor=1.0,
+              status_forcelist=(429, 500, 502, 503, 504),
+              allowed_methods=frozenset(["GET"]), respect_retry_after_header=True)
+adapter = HTTPAdapter(max_retries=retry, pool_connections=SETTINGS["max_workers"],
+                      pool_maxsize=SETTINGS["max_workers"])
+SESSION.mount("http://", adapter)
+SESSION.mount("https://", adapter)
 SESSION.headers.update({"User-Agent": UA, "Accept": "*/*"})
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 
@@ -60,8 +70,17 @@ def canonical_url(url):
 
 def is_public_candidate(url):
     parsed = urlparse(url)
-    if parsed.scheme not in ("http", "https") or parsed.username or parsed.password:
+    if parsed.scheme not in ("http", "https") or parsed.username or parsed.password or not parsed.hostname:
         return False
+    host = parsed.hostname.lower().rstrip(".")
+    if host in ("localhost", "localhost.localdomain") or host.endswith((".local", ".internal", ".localhost")):
+        return False
+    try:
+        address = ipaddress.ip_address(host)
+        if not address.is_global:
+            return False
+    except ValueError:
+        pass
     # Avoid publishing signed or credential-bearing URLs into this public repository.
     return not bool(re.search(r"[?&](?:access_?token|api_?key|auth|authorization|password|passwd|secret|signature|sig|token|x-amz-signature)=", url, re.I))
 
@@ -164,7 +183,7 @@ def add_channel(db, entry):
 def discover(db):
     queue = [(r[0], r[1]) for r in db.execute("SELECT url,depth FROM sources WHERE last_checked IS NULL OR last_checked < datetime('now','-20 hours') ORDER BY depth ASC LIMIT ?", (SETTINGS["max_sources_per_run"],))]
     visited = set()
-    while queue:
+    while queue and len(visited) < SETTINGS["max_sources_per_run"]:
         batch = []
         for url, depth in queue:
             if url not in visited:
