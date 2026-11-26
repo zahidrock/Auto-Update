@@ -84,10 +84,11 @@ def parse_playlist(text, source_url):
                 "category": attrs.get("group-title", "Uncategorized"),
             }
         elif line.startswith(("http://", "https://")):
-            if meta and is_public_candidate(line):
-                entries.append({**meta, "url": canonical_url(line), "source_url": source_url})
+            if meta:
+                if is_public_candidate(line):
+                    entries.append({**meta, "url": canonical_url(line), "source_url": source_url})
                 meta = None
-            elif re.search(r'\.(m3u8?|m3u)(?:$|[?#])', line, re.I):
+            elif is_public_candidate(line) and re.search(r'\.(m3u8?|m3u)(?:$|[?#])', line, re.I):
                 entries.append({"name": Path(urlparse(line).path).name or "Nested playlist",
                                 "url": canonical_url(line), "source_url": source_url, "is_source": True})
     return entries
