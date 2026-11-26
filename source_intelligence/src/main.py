@@ -50,6 +50,13 @@ def connect():
 def canonical_url(url):
     return url.strip().replace("&amp;", "&")
 
+def is_public_candidate(url):
+    parsed = urlparse(url)
+    if parsed.scheme not in ("http", "https") or parsed.username or parsed.password:
+        return False
+    # Avoid publishing signed or credential-bearing URLs into this public repository.
+    return not bool(re.search(r"[?&](?:access_?token|api_?key|auth|authorization|password|passwd|secret|signature|sig|token|x-amz-signature)=", url, re.I))
+
 def load_seeds(db):
     urls = []
     for line in SEEDS.read_text(encoding="utf-8").splitlines():
@@ -77,7 +84,7 @@ def parse_playlist(text, source_url):
                 "category": attrs.get("group-title", "Uncategorized"),
             }
         elif line.startswith(("http://", "https://")):
-            if meta:
+            if meta and is_public_candidate(line):
                 entries.append({**meta, "url": canonical_url(line), "source_url": source_url})
                 meta = None
             elif re.search(r'\.(m3u8?|m3u)(?:$|[?#])', line, re.I):
