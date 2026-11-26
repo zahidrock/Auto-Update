@@ -1,0 +1,47 @@
+{
+  "max_workers": 16,
+  "request_timeout_seconds": 12,
+  "max_sources_per_run": 150,
+  "max_channels_per_source": 20000,
+  "max_recursive_depth": 2,
+  "minimum_download_bytes_per_second": 32768,
+  "minimum_segment_bytes": 256,
+  "database": "source_intelligence/data/registry.sqlite3",
+  "output_dir": "source_intelligence/output",
+  "categories": {
+    "Bangladesh TV": [
+      "bd"
+    ],
+    "Indian TV": [
+      "in"
+    ],
+    "Indian Movies": [
+      "movies",
+      "movie"
+    ],
+    "Indian Music": [
+      "music"
+    ],
+    "English TV": [
+      "eng",
+      "english"
+    ],
+    "English Movies": [
+      "eng",
+      "english",
+      "movies"
+    ],
+    "English Music": [
+      "eng",
+      "english",
+      "music"
+    ],
+    "Kids": [
+      "kids",
+      "children"
+    ],
+    "Sports": [
+      "sports"
+    ]
+  }
+}
