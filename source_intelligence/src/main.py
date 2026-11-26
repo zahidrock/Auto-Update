@@ -41,7 +41,7 @@ def connect():
       source_url TEXT, source_name TEXT, first_seen TEXT DEFAULT CURRENT_TIMESTAMP,
       last_seen TEXT DEFAULT CURRENT_TIMESTAMP, status TEXT DEFAULT 'new',
       http_status INTEGER, ttfb REAL, total_seconds REAL, bytes_per_second REAL,
-      segment_ok INTEGER DEFAULT 0, error TEXT
+      segment_ok INTEGER DEFAULT 0, error TEXT, last_checked TEXT
     );
     CREATE INDEX IF NOT EXISTS idx_links_channel ON links(channel_id);
     """)
@@ -134,7 +134,7 @@ def add_channel(db, entry):
         db.execute("UPDATE links SET last_seen=CURRENT_TIMESTAMP WHERE url=?", (entry["url"],))
 
 def discover(db):
-    queue = [(r[0], r[1]) for r in db.execute("SELECT url,depth FROM sources WHERE status!='done' ORDER BY depth ASC LIMIT ?", (SETTINGS["max_sources_per_run"],))]
+    queue = [(r[0], r[1]) for r in db.execute("SELECT url,depth FROM sources WHERE last_checked IS NULL OR last_checked < datetime('now','-20 hours') ORDER BY depth ASC LIMIT ?", (SETTINGS["max_sources_per_run"],))]
     visited = set()
     while queue:
         batch = []
