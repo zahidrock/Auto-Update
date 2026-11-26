@@ -13,6 +13,11 @@ https://raw.githubusercontent.com/freecasthub/public-iptv/main/playlist.m3u
 https://iptv.coldopen.dev/channels.m3u
 https://nexonic-technologies.github.io/nexonic-iptv/playlists/verified.m3u
 
+# Official Bangladesh public broadcaster portal (HTML index; stream URLs may be dynamic)
+https://btvlive.gov.bd/
+# Curated public streams with broadcaster-origin verification
+https://broadcastatlas.com/official.m3u
+
 # More language and category indexes from iptv-org
 https://iptv-org.github.io/iptv/languages/eng.m3u
 https://iptv-org.github.io/iptv/languages/hin.m3u
