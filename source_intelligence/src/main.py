@@ -40,7 +40,9 @@ def connect():
     db.executescript("""
     CREATE TABLE IF NOT EXISTS sources(
       url TEXT PRIMARY KEY, discovered_from TEXT, depth INTEGER DEFAULT 0,
-      last_seen TEXT DEFAULT CURRENT_TIMESTAMP, last_checked TEXT, status TEXT DEFAULT 'new'
+      last_seen TEXT DEFAULT CURRENT_TIMESTAMP, last_checked TEXT, status TEXT DEFAULT 'new',
+      http_status INTEGER, last_error TEXT, entries_found INTEGER DEFAULT 0,
+      stream_candidates INTEGER DEFAULT 0
     );
     CREATE TABLE IF NOT EXISTS channels(
       id INTEGER PRIMARY KEY, name TEXT NOT NULL, tvg_id TEXT, logo TEXT,
@@ -60,8 +62,15 @@ def connect():
     if "last_checked" not in columns:
         db.execute("ALTER TABLE links ADD COLUMN last_checked TEXT")
     source_columns = {row[1] for row in db.execute("PRAGMA table_info(sources)")}
-    if "last_checked" not in source_columns:
-        db.execute("ALTER TABLE sources ADD COLUMN last_checked TEXT")
+    for column, definition in (
+        ("last_checked", "TEXT"),
+        ("http_status", "INTEGER"),
+        ("last_error", "TEXT"),
+        ("entries_found", "INTEGER DEFAULT 0"),
+        ("stream_candidates", "INTEGER DEFAULT 0"),
+    ):
+        if column not in source_columns:
+            db.execute(f"ALTER TABLE sources ADD COLUMN {column} {definition}")
     db.commit()
     return db
 
@@ -307,14 +316,23 @@ def discover(db):
             results = list(pool.map(lambda x: fetch_source(x[0]), batch))
         for (requested, depth), result in zip(batch, results):
             _, final_url, status, body, elapsed, error = result
-            db.execute("UPDATE sources SET last_checked=CURRENT_TIMESTAMP,status=? WHERE url=?",
-                       ("done" if status and status < 400 else "error", requested))
             if error:
-                logging.warning("Source failed %s: %s", requested, error); continue
+                db.execute("""UPDATE sources SET last_checked=CURRENT_TIMESTAMP,status='error',
+                              http_status=?,last_error=?,entries_found=0,stream_candidates=0
+                              WHERE url=?""", (status, error, requested))
+                logging.warning("Source failed %s: %s", requested, error)
+                continue
             entries = parse_playlist(body, final_url)[:SETTINGS["max_channels_per_source"]]
+            stream_entries = []
             if not body.lstrip().startswith("#EXTM3U"):
-                for stream_entry in discover_stream_refs(body, final_url):
-                    add_channel(db, stream_entry)
+                stream_entries = discover_stream_refs(body, final_url)
+            stream_candidates = sum(1 for entry in entries if not entry.get("is_source")) + len(stream_entries)
+            db.execute("""UPDATE sources SET last_checked=CURRENT_TIMESTAMP,status=?,http_status=?,
+                          last_error=NULL,entries_found=?,stream_candidates=? WHERE url=?""",
+                       ("done" if status and status < 400 else "error", status,
+                        len(entries) + len(stream_entries), stream_candidates, requested))
+            for stream_entry in stream_entries:
+                add_channel(db, stream_entry)
             for nested in discover_playlist_refs(body, final_url):
                 if depth < SETTINGS["max_recursive_depth"] and nested not in visited:
                     db.execute("INSERT OR IGNORE INTO sources(url,discovered_from,depth) VALUES(?,?,?)",
@@ -399,8 +417,25 @@ def write_playlist(path, rows):
         lines.append(url)
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
+def write_source_report(db):
+    rows = db.execute("""SELECT url, COALESCE(discovered_from,''), depth, status,
+                                http_status, last_checked, COALESCE(last_error,''),
+                                COALESCE(entries_found,0), COALESCE(stream_candidates,0)
+                         FROM sources ORDER BY depth, url""").fetchall()
+    with (OUT_DIR / "source_report.csv").open("w", encoding="utf-8", newline="") as f:
+        import csv
+        writer = csv.writer(f)
+        writer.writerow(["source_url", "discovered_from", "depth", "status", "http_status",
+                         "last_checked", "last_error", "entries_found", "stream_candidates"])
+        writer.writerows(rows)
+    status_counts = db.execute("SELECT status, COUNT(*) FROM sources GROUP BY status").fetchall()
+    logging.info("Source health: %s", ", ".join(f"{status}={count}" for status, count in status_counts) or "no sources")
+    logging.info("Source diagnostics written for %d sources", len(rows))
+
+
 def generate(db):
     OUT_DIR.mkdir(parents=True, exist_ok=True)
+    write_source_report(db)
     base = db.execute("""SELECT c.name,c.logo,c.category,l.url,l.status,l.bytes_per_second,l.ttfb
                          FROM links l JOIN channels c ON c.id=l.channel_id
                          WHERE l.status IN ('fast','slow') ORDER BY l.bytes_per_second DESC""").fetchall()
@@ -427,6 +462,10 @@ def generate(db):
         w=csv.writer(f); w.writerow(["channel","category","status","bytes_per_second","ttfb","url"])
         for x in best.values(): w.writerow([x[0],x[2],x[4],round(x[5] or 0),round(x[6] or 0,3),x[3]])
     logging.info("Generated %d fast primary channels and %d fast source links",len(fast),len(all_fast))
+    category_counts = {category: sum(1 for item in fast if item[2] == category)
+                       for category in SETTINGS["categories"]}
+    logging.info("Fast channel counts by category: %s",
+                 ", ".join(f"{category}={count}" for category, count in category_counts.items()))
 
 def main():
     db=connect()
