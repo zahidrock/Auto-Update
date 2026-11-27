@@ -1,27 +1,23 @@
 # IPTV Source Intelligence
 
-This is a separate collection engine alongside the existing updater. It does not overwrite `auto_update.py`, `playlist.m3u`, or the existing workflow.
+## Current source policy
 
-## First-stage behavior
+- Only hosts listed in `config/settings.json` under `approved_source_hosts` and `approved_stream_hosts` are fetched or published.
+- The current allowlist is limited to the official BTV live portal and BTV website domains.
+- The seed list contains only official BTV live pages. Unverified public playlist aggregators are not treated as proof of broadcast authorization.
+- HLS redirects and media-segment hosts must also remain on the approved host list.
+- Explicit geo-blocked, subscription, pay-TV, login, and DRM-marked entries are rejected.
+- Signed/credential-bearing URLs, private IPs, and local hosts are rejected.
 
-- Reads configured public playlist/index seeds.
-- Parses M3U/M3U8 entries and recursively follows playlist-like URLs found inside those sources.
-- Stores discovered channels, source URLs, and validation results in SQLite.
-- Checks HTTP access and HLS playlist/segment reachability.
-- Produces a fast-only combined playlist, category playlists, an all-fast playlist, and a slower/uncertain archive.
-- Runs daily in GitHub Actions; no local PC is required.
+To add a broadcaster, first verify that its official website links to the stream and makes it publicly available without login, subscription, DRM circumvention, or geo-restriction bypass. If it uses a CDN, add that exact CDN hostname only after verifying the official link. Do not add third-party playlist collections merely because they are publicly downloadable.
 
-## Important limits
-
-A GitHub Actions runner is not located in Bangladesh. Its measured throughput is only a rough filter and cannot guarantee playback speed on a Bangladeshi ISP. DRM, login, geo-blocking, token expiry, and provider-side restrictions can also affect playback.
-
-Only collect streams that are publicly offered for use or that you are authorized to access. Do not use leaked private API keys, stolen credentials, or bypass access controls. Put any personally authorized API keys in GitHub Actions Secrets, never in repository files.
+The collector prunes old database rows outside the current allowlists before discovery and filters again when generating playlists. Empty category playlists are expected until more official free-to-air sources are verified.
 
 ## Files
 
-- `config/settings.json`: thresholds, concurrency, and output settings.
-- `config/seeds.txt`: starting public playlist URLs. Add more trusted public sources here.
+- `config/settings.json`: host allowlists, thresholds, and output settings.
+- `config/seeds.txt`: official broadcaster pages to inspect.
 - `src/main.py`: discovery, validation, database, and playlist generation.
-- `.github/workflows/source-intelligence.yml`: daily automation.
+- `.github/workflows/source-intelligence.yml`: GitHub Actions automation.
 
-The existing updater remains independent.
+A GitHub Actions runner is not located in Bangladesh. Its speed measurements are only a rough filter and cannot guarantee local playback.

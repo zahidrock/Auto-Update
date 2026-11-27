@@ -84,12 +84,31 @@ def is_public_candidate(url):
     # Avoid publishing signed or credential-bearing URLs into this public repository.
     return not bool(re.search(r"[?&](?:access_?token|api_?key|auth|authorization|password|passwd|secret|signature|sig|token|x-amz-signature)=", url, re.I))
 
+def host_allowed(url, setting_name):
+    host = (urlparse(url).hostname or "").lower().rstrip(".")
+    allowed = [str(x).lower().strip(".") for x in SETTINGS.get(setting_name, [])]
+    return bool(host) and any(host == domain or host.endswith("." + domain) for domain in allowed)
+
+def is_approved_source(url):
+    return is_public_candidate(url) and host_allowed(url, "approved_source_hosts")
+
+def is_approved_stream(url):
+    return is_public_candidate(url) and host_allowed(url, "approved_stream_hosts")
+
+def is_free_to_air_label(name, group=""):
+    label = f"{name or ''} {group or ''}".lower()
+    blocked = r"\b(?:geo[- ]?blocked|pay[- ]?tv|subscription|premium channel|requires? login|drm)\b"
+    return not bool(re.search(blocked, label, re.I))
+
 def load_seeds(db):
     urls = []
     for line in SEEDS.read_text(encoding="utf-8").splitlines():
         line = line.strip()
         if line and not line.startswith("#") and line.startswith(("http://", "https://")):
-            urls.append(line)
+            if is_approved_source(line):
+                urls.append(line)
+            else:
+                logging.warning("Skipping seed outside approved source hosts: %s", urlparse(line).hostname)
     for url in urls:
         db.execute("INSERT OR IGNORE INTO sources(url, discovered_from, depth) VALUES(?,?,0)", (url, "seed"))
     db.commit()
@@ -108,14 +127,16 @@ def parse_playlist(text, source_url):
                 "name": name or attrs.get("tvg-name") or "Unknown",
                 "tvg_id": attrs.get("tvg-id", ""),
                 "logo": attrs.get("tvg-logo", ""),
-                "category": attrs.get("group-title", "Uncategorized"),\n                "country": attrs.get("tvg-country", ""),\n                "language": attrs.get("tvg-language", ""),
+                "category": attrs.get("group-title", "Uncategorized"),
+                "country": attrs.get("tvg-country", ""),
+                "language": attrs.get("tvg-language", ""),
             }
         elif line.startswith(("http://", "https://")):
             if meta:
-                if is_public_candidate(line):
+                if is_approved_stream(line) and is_free_to_air_label(meta.get("name"), meta.get("category")):
                     entries.append({**meta, "url": canonical_url(line), "source_url": source_url})
                 meta = None
-            elif is_public_candidate(line) and re.search(r'\.(m3u8?|m3u)(?:$|[?#])', line, re.I):
+            elif is_approved_source(line) and re.search(r'\.m3u(?:$|[?#])', line, re.I):
                 entries.append({"name": Path(urlparse(line).path).name or "Nested playlist",
                                 "url": canonical_url(line), "source_url": source_url, "is_source": True})
     return entries
@@ -123,12 +144,14 @@ def parse_playlist(text, source_url):
 def category_for(name, group, url, source_url="", country="", language=""):
     # Use explicit channel metadata and source indexes; do not guess a language
     # from generic "movies" or "music" feeds.
-    hay = " ".join((name, group, url, source_url, country, language)).lower()
-    path = urlparse(source_url).path.lower()
+    hay = " ".join((name, group, country, language)).lower()
+    source_host = (urlparse(source_url).hostname or "").lower()
     country_code = country.lower().strip()
     language_code = language.lower().strip()
-    is_bd = country_code in ("bd", "bgd") or language_code in ("ben-bd", "bn-bd") or any(
-        x in hay for x in ("bangladesh", "bangla", "/bd.m3u", "countries/bd"))
+    is_bd = country_code in ("bd", "bgd") or language_code in ("ben-bd", "bn-bd") or (
+        source_host == "btvlive.gov.bd" or source_host.endswith(".btvlive.gov.bd")
+        or source_host == "btv.gov.bd" or source_host.endswith(".btv.gov.bd")
+    ) or any(x in hay for x in ("bangladesh", "bangla"))
     is_india = country_code in ("in", "ind") or language_code in (
         "hin", "tam", "tel", "kan", "mal", "mar", "guj", "ori", "asm", "pan"
     ) or any(x in hay for x in ("india", "indian", "hindi", "tamil", "telugu", "kolkata", "countries/in"))
@@ -168,14 +191,40 @@ def discover_playlist_refs(body, base_url):
     for candidate in candidates:
         candidate = candidate.rstrip("),.;]}'")
         absolute = urljoin(base_url, candidate)
-        if re.search(r"\.(?:m3u8?|m3u)(?:$|[?#])", absolute, re.I) and is_public_candidate(absolute):
+        if re.search(r"\.m3u(?:$|[?#])", absolute, re.I) and is_approved_source(absolute):
             refs.add(canonical_url(absolute))
     return refs
 
+def discover_stream_refs(body, page_url):
+    # Extract direct HLS links only from an already-approved official broadcaster page.
+    refs = []
+    pattern = r"""https?://[^\s"'<>]+|(?:\./|/)[^\s"'<>]+\.m3u8(?:\?[^\s"'<>]*)?"""
+    candidates = re.findall(pattern, body, re.I)
+    slug = Path(urlparse(page_url).path.rstrip("/")).name or "Official BTV Live"
+    name = re.sub(r"[-_]+", " ", slug).strip()
+    for candidate in candidates:
+        candidate = candidate.rstrip("),.;]}'")
+        absolute = urljoin(page_url, candidate)
+        if re.search(r"\.m3u8(?:$|[?#])", absolute, re.I) and is_approved_stream(absolute):
+            refs.append({
+                "name": name,
+                "category": "Bangladesh TV",
+                "country": "bd",
+                "language": "ben",
+                "url": canonical_url(absolute),
+                "source_url": page_url,
+            })
+    return refs
+
 def fetch_source(url):
+    if not is_approved_source(url):
+        return url, url, None, "", 0.0, "Source host is not approved"
     try:
         start = time.monotonic()
         response = SESSION.get(url, timeout=SETTINGS["request_timeout_seconds"], stream=True, allow_redirects=True)
+        if not is_approved_source(response.url):
+            response.close()
+            return url, response.url, None, "", time.monotonic() - start, "Redirected to an unapproved source host"
         response.raise_for_status()
         chunks, total = [], 0
         for chunk in response.iter_content(65536):
@@ -189,7 +238,13 @@ def fetch_source(url):
 
 def add_channel(db, entry):
     name = entry.get("name") or "Unknown"
-    cat = category_for(name, entry.get("category", ""), entry["url"], entry.get("source_url", ""),\n                       entry.get("country", ""), entry.get("language", ""))
+    group = entry.get("category", "")
+    if (not is_approved_source(entry.get("source_url", ""))
+            or not is_approved_stream(entry["url"])
+            or not is_free_to_air_label(name, group)):
+        return
+    cat = category_for(name, group, entry["url"], entry.get("source_url", ""),
+                       entry.get("country", ""), entry.get("language", ""))
     norm = re.sub(r"[^a-z0-9]+", "", name.lower())
     db.execute("""INSERT OR IGNORE INTO channels(name,tvg_id,logo,category,normalized_name)
                   VALUES(?,?,?,?,?)""", (name, entry.get("tvg_id",""), entry.get("logo",""), cat, norm))
@@ -199,8 +254,27 @@ def add_channel(db, entry):
                       VALUES(?,?,?,?)""", (row[0], entry["url"], entry.get("source_url"), entry.get("source_name","public playlist")))
         db.execute("UPDATE links SET last_seen=CURRENT_TIMESTAMP WHERE url=?", (entry["url"],))
 
+def prune_unapproved(db):
+    bad_links = []
+    for link_id, url, source_url in db.execute("SELECT id,url,source_url FROM links"):
+        if not is_approved_stream(url) or not is_approved_source(source_url or ""):
+            bad_links.append((link_id,))
+    if bad_links:
+        db.executemany("DELETE FROM links WHERE id=?", bad_links)
+
+    bad_sources = [
+        (url,) for (url,) in db.execute("SELECT url FROM sources")
+        if not is_approved_source(url)
+    ]
+    if bad_sources:
+        db.executemany("DELETE FROM sources WHERE url=?", bad_sources)
+
+    db.execute("DELETE FROM channels WHERE NOT EXISTS (SELECT 1 FROM links WHERE links.channel_id=channels.id)")
+    db.commit()
+    logging.info("Removed %d unapproved links and %d unapproved sources", len(bad_links), len(bad_sources))
+
 def discover(db):
-    queue = [(r[0], r[1]) for r in db.execute("SELECT url,depth FROM sources WHERE last_checked IS NULL OR last_checked < datetime('now','-20 hours') ORDER BY depth ASC LIMIT ?", (SETTINGS["max_sources_per_run"],))]
+    queue = [(r[0], r[1]) for r in db.execute("SELECT url,depth FROM sources WHERE last_checked IS NULL OR last_checked < datetime('now','-20 hours') ORDER BY depth ASC LIMIT ?", (SETTINGS["max_sources_per_run"],)) if is_approved_source(r[0])]
     visited = set()
     while queue and len(visited) < SETTINGS["max_sources_per_run"]:
         batch = []
@@ -218,6 +292,9 @@ def discover(db):
             if error:
                 logging.warning("Source failed %s: %s", requested, error); continue
             entries = parse_playlist(body, final_url)[:SETTINGS["max_channels_per_source"]]
+            if not body.lstrip().startswith("#EXTM3U"):
+                for stream_entry in discover_stream_refs(body, final_url):
+                    add_channel(db, stream_entry)
             for nested in discover_playlist_refs(body, final_url):
                 if depth < SETTINGS["max_recursive_depth"] and nested not in visited:
                     db.execute("INSERT OR IGNORE INTO sources(url,discovered_from,depth) VALUES(?,?,?)",
@@ -238,11 +315,15 @@ def discover(db):
 
 def check_link(row):
     link_id, url = row
+    if not is_approved_stream(url):
+        return link_id, None, 0.0, 0.0, 0, "Stream host is not approved"
     start = time.monotonic()
     try:
         with SESSION.get(url, timeout=SETTINGS["request_timeout_seconds"], stream=True, allow_redirects=True) as r:
             ttfb = time.monotonic() - start
             status = r.status_code
+            if not is_approved_stream(r.url):
+                return link_id, None, ttfb, 0.0, 0, "Redirected to an unapproved stream host"
             if status >= 400:
                 return link_id, status, ttfb, 0.0, 0, f"HTTP {status}"
             ctype = r.headers.get("Content-Type", "").lower()
@@ -260,7 +341,7 @@ def check_link(row):
                     try:
                         with SESSION.get(segment_url, timeout=SETTINGS["request_timeout_seconds"],
                                          stream=True, allow_redirects=True) as sr:
-                            segment_ok = int(sr.status_code < 400 and len(next(sr.iter_content(4096), b"")) >= SETTINGS["minimum_segment_bytes"])
+                            segment_ok = int(is_approved_stream(sr.url) and sr.status_code < 400 and len(next(sr.iter_content(4096), b"")) >= SETTINGS["minimum_segment_bytes"])
                     except Exception:
                         segment_ok = 0
                 else:
@@ -303,6 +384,7 @@ def generate(db):
     base = db.execute("""SELECT c.name,c.logo,c.category,l.url,l.status,l.bytes_per_second,l.ttfb
                          FROM links l JOIN channels c ON c.id=l.channel_id
                          WHERE l.status IN ('fast','slow') ORDER BY l.bytes_per_second DESC""").fetchall()
+    base = [r for r in base if is_approved_stream(r[3]) and is_free_to_air_label(r[0], r[2])]
     best = {}
     for name,logo,cat,url,status,speed,ttfb in base:
         key = (re.sub(r"[^a-z0-9]+","",name.lower()), cat)
@@ -329,6 +411,7 @@ def generate(db):
 def main():
     db=connect()
     try:
+        prune_unapproved(db)
         load_seeds(db)
         discover(db)
         validate(db)

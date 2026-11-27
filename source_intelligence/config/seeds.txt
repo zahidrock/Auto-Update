@@ -1,34 +1,8 @@
-# One public playlist/index URL per line. Add only sources you are allowed to use.
-https://iptv-org.github.io/iptv/countries/bd.m3u
-https://iptv-org.github.io/iptv/countries/in.m3u
-https://iptv-org.github.io/iptv/countries/gb.m3u
-https://iptv-org.github.io/iptv/countries/us.m3u
-https://iptv-org.github.io/iptv/categories/movies.m3u
-https://iptv-org.github.io/iptv/categories/music.m3u
-https://iptv-org.github.io/iptv/categories/sports.m3u
-https://iptv-org.github.io/iptv/categories/kids.m3u
-# Additional curated public collections
-https://raw.githubusercontent.com/Free-TV/IPTV/master/playlist.m3u8
-https://raw.githubusercontent.com/freecasthub/public-iptv/main/playlist.m3u
-https://iptv.coldopen.dev/channels.m3u
-https://nexonic-technologies.github.io/nexonic-iptv/playlists/verified.m3u
-
-# Official Bangladesh public broadcaster portal (HTML index; stream URLs may be dynamic)
+# Official Bangladesh Television live pages only.
+# New hosts must be verified from an official broadcaster page and publicly offered
+# without subscription, login, DRM circumvention, or geo-restriction bypass.
 https://btvlive.gov.bd/
-# Curated public streams with broadcaster-origin verification
-https://broadcastatlas.com/official.m3u
-
-# More language and category indexes from iptv-org
-https://iptv-org.github.io/iptv/languages/eng.m3u
-https://iptv-org.github.io/iptv/languages/hin.m3u
-https://iptv-org.github.io/iptv/languages/ben.m3u
-https://iptv-org.github.io/iptv/categories/news.m3u
-https://iptv-org.github.io/iptv/categories/documentary.m3u
-https://iptv-org.github.io/iptv/categories/animation.m3u
-https://iptv-org.github.io/iptv/categories/education.m3u
-https://iptv-org.github.io/iptv/categories/family.m3u
-https://iptv-org.github.io/iptv/categories/public.m3u
-# Public source indexes and documentation pages (crawler follows explicit M3U links)
-https://raw.githubusercontent.com/iptv-org/iptv/master/PLAYLISTS.md
-https://raw.githubusercontent.com/Free-TV/IPTV/master/README.md
-https://raw.githubusercontent.com/freecasthub/public-iptv/main/README.md
+https://btvlive.gov.bd/channel/BTV
+https://btvlive.gov.bd/channel/BTV-News
+https://btvlive.gov.bd/channel/BTV-Chattogram
+https://btvlive.gov.bd/channel/Sangsad-Television
