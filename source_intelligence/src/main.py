@@ -95,6 +95,26 @@ def is_approved_source(url):
 def is_approved_stream(url):
     return is_public_candidate(url) and host_allowed(url, "approved_stream_hosts")
 
+def approved_get(url, policy, **kwargs):
+    # Follow redirects only when every hop remains on an approved host.
+    current = url
+    for _ in range(6):
+        if not policy(current):
+            raise ValueError("Request host is not approved")
+        response = SESSION.get(current, allow_redirects=False, **kwargs)
+        if response.status_code in (301, 302, 303, 307, 308):
+            location = response.headers.get("Location")
+            if not location:
+                return response
+            target = urljoin(response.url, location)
+            response.close()
+            if not policy(target):
+                raise ValueError("Redirect target host is not approved")
+            current = target
+            continue
+        return response
+    raise ValueError("Too many redirects")
+
 def is_free_to_air_label(name, group=""):
     label = f"{name or ''} {group or ''}".lower()
     blocked = r"\b(?:geo[- ]?blocked|pay[- ]?tv|subscription|premium channel|requires? login|drm)\b"
@@ -221,7 +241,7 @@ def fetch_source(url):
         return url, url, None, "", 0.0, "Source host is not approved"
     try:
         start = time.monotonic()
-        response = SESSION.get(url, timeout=SETTINGS["request_timeout_seconds"], stream=True, allow_redirects=True)
+        response = approved_get(url, is_approved_source, timeout=SETTINGS["request_timeout_seconds"], stream=True)
         if not is_approved_source(response.url):
             response.close()
             return url, response.url, None, "", time.monotonic() - start, "Redirected to an unapproved source host"
@@ -319,7 +339,7 @@ def check_link(row):
         return link_id, None, 0.0, 0.0, 0, "Stream host is not approved"
     start = time.monotonic()
     try:
-        with SESSION.get(url, timeout=SETTINGS["request_timeout_seconds"], stream=True, allow_redirects=True) as r:
+        with approved_get(url, is_approved_stream, timeout=SETTINGS["request_timeout_seconds"], stream=True) as r:
             ttfb = time.monotonic() - start
             status = r.status_code
             if not is_approved_stream(r.url):
@@ -339,8 +359,8 @@ def check_link(row):
                 if segment:
                     segment_url = urljoin(r.url, segment)
                     try:
-                        with SESSION.get(segment_url, timeout=SETTINGS["request_timeout_seconds"],
-                                         stream=True, allow_redirects=True) as sr:
+                        with approved_get(segment_url, is_approved_stream, timeout=SETTINGS["request_timeout_seconds"],
+                                          stream=True) as sr:
                             segment_ok = int(is_approved_stream(sr.url) and sr.status_code < 400 and len(next(sr.iter_content(4096), b"")) >= SETTINGS["minimum_segment_bytes"])
                     except Exception:
                         segment_ok = 0
