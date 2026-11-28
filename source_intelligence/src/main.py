@@ -247,33 +247,41 @@ def parse_playlist(text, source_url):
     return entries
 
 def category_for(name, group, url, source_url="", country="", language=""):
-    # Use explicit channel metadata and source indexes; do not guess a language
-    # from generic "movies" or "music" feeds.
-    hay = " ".join((name, group, country, language)).lower()
-    source_host = (urlparse(source_url).hostname or "").lower()
-    country_code = country.lower().strip()
-    language_code = language.lower().strip()
-    is_bd = country_code in ("bd", "bgd") or language_code in ("ben-bd", "bn-bd") or (
-        source_host == "btvlive.gov.bd" or source_host.endswith(".btvlive.gov.bd")
-        or source_host == "btv.gov.bd" or source_host.endswith(".btv.gov.bd")
-    ) or any(x in hay for x in ("bangladesh", "bangla"))
-    is_india = country_code in ("in", "ind") or language_code in (
+    # Use channel metadata plus the playlist index path. The index path is
+    # important because community M3U files often omit tvg-country/language.
+    source_path = urlparse(source_url).path.lower()
+    hay = " ".join((name, group, country, language, source_path)).lower()
+    country_code = (country or "").lower().strip()
+    language_code = (language or "").lower().strip()
+
+    source_bd = "/countries/bd." in source_path
+    source_in = "/countries/in." in source_path
+    source_english = "/languages/eng." in source_path
+    source_movies = "/categories/movies." in source_path or "/output/movie." in source_path
+    source_music = "/categories/music." in source_path
+    source_kids = "/categories/kids." in source_path
+    source_sports = "/categories/sports." in source_path
+
+    is_bd = source_bd or country_code in ("bd", "bgd") or language_code in ("ben-bd", "bn-bd") or (
+        any(x in hay for x in ("bangladesh", "bangla"))
+        or "btvlive.gov.bd" in source_url or "btv.gov.bd" in source_url
+    )
+    is_india = source_in or country_code in ("in", "ind") or language_code in (
         "hin", "tam", "tel", "kan", "mal", "mar", "guj", "ori", "asm", "pan"
-    ) or any(x in hay for x in ("india", "indian", "hindi", "tamil", "telugu", "kolkata", "countries/in"))
-    is_english = language_code in ("eng", "en", "english") or any(
-        x in hay for x in ("english", "hollywood", "languages/eng", "countries/gb", "countries/us",
+    ) or any(x in hay for x in ("india", "indian", "hindi", "tamil", "telugu", "kolkata"))
+    is_english = source_english or language_code in ("eng", "en", "english") or any(
+        x in hay for x in ("english", "hollywood", "countries/gb", "countries/us",
                            "countries/ca", "countries/au", "countries/nz")
     )
-    is_kids = any(x in hay for x in ("kids", "children", "cartoon", "nick", "disney", "animation"))
-    is_sports = any(x in hay for x in ("sport", "cricket", "football", "tennis", "formula 1"))
-    is_movie = any(x in hay for x in ("movie", "movies", "cinema", "film", "hollywood"))
-    is_music = any(x in hay for x in ("music", "musical", "mtv", "vevo"))
+    is_kids = source_kids or any(x in hay for x in ("kids", "children", "cartoon", "nick", "disney", "animation"))
+    is_sports = source_sports or any(x in hay for x in ("sport", "cricket", "football", "tennis", "formula 1"))
+    is_movie = source_movies or any(x in hay for x in ("movie", "movies", "cinema", "film", "hollywood"))
+    is_music = source_music or any(x in hay for x in ("music", "musical", "mtv", "vevo"))
+
     if is_kids:
         return "Kids"
     if is_sports:
         return "Sports"
-    if is_bd:
-        return "Bangladesh TV"
     if is_movie:
         if is_india: return "Indian Movies"
         if is_english: return "English Movies"
@@ -282,6 +290,8 @@ def category_for(name, group, url, source_url="", country="", language=""):
         if is_india: return "Indian Music"
         if is_english: return "English Music"
         return "Uncategorized"
+    if is_bd:
+        return "Bangladesh TV"
     if is_india:
         return "Indian TV"
     if is_english:
