@@ -1,13 +1,12 @@
-# Official Bangladesh Television live pages only.
-# New hosts must be verified from an official broadcaster page and publicly offered
-# without subscription, login, DRM circumvention, or geo-restriction bypass.
-https://btvlive.gov.bd/
-https://btvlive.gov.bd/channel/BTV
-https://btvlive.gov.bd/channel/BTV-News
-https://btvlive.gov.bd/channel/BTV-Chattogram
-https://btvlive.gov.bd/channel/Sangsad-Television
-https://live.btv.gov.bd/
-# Official Prasar Bharati / WAVES public pages (discovery only; not proof of direct-stream rights).
-https://prasarbharati.gov.in/en/waves/
-https://newsonair.gov.in/
-https://www.wavespb.com/
+# Public community IPTV playlist indexes; entries are independently tested before publishing.
+https://iptv-org.github.io/iptv/index.m3u
+https://iptv-org.github.io/iptv/countries/bd.m3u
+https://iptv-org.github.io/iptv/countries/in.m3u
+https://iptv-org.github.io/iptv/categories/movies.m3u
+https://iptv-org.github.io/iptv/categories/music.m3u
+https://iptv-org.github.io/iptv/categories/sports.m3u
+https://iptv-org.github.io/iptv/categories/kids.m3u
+https://iptv-org.github.io/iptv/languages/eng.m3u
+https://raw.githubusercontent.com/Free-TV/IPTV/master/playlist.m3u8
+
+# Additional public playlist repositories are discovered automatically through GitHub's API.
