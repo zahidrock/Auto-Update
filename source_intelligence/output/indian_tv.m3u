@@ -1,5 +1,1 @@
 #EXTM3U
-#EXTINF:-1 tvg-name="ABN TV India (540p)" tvg-logo="https://i.imgur.com/VcZn60X.png" group-title="Indian TV",ABN TV India (540p)
-https://mediaserver.abnvideos.com/streams/abntvindia.m3u8
-#EXTINF:-1 tvg-name="Aastha (576p)" tvg-logo="https://i.imgur.com/IqgrV92.png" group-title="Indian TV",Aastha (576p)
-http://163.61.226.31:9981/stream/channelid/565086134?profile=pass

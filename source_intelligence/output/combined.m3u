@@ -1,41 +1,11 @@
 #EXTM3U
-#EXTINF:-1 tvg-name="ABN Bible Movies Channel (720p)" tvg-logo="https://i.imgur.com/NCqZdaL.png" group-title="English Movies",ABN Bible Movies Channel (720p)
-https://mediaserver.abnvideos.com/streams/abnbiblemovies.m3u8
-#EXTINF:-1 tvg-name="ABN TV India (540p)" tvg-logo="https://i.imgur.com/VcZn60X.png" group-title="Indian TV",ABN TV India (540p)
-https://mediaserver.abnvideos.com/streams/abntvindia.m3u8
-#EXTINF:-1 tvg-name="ABNsat (720p)" tvg-logo="https://i.imgur.com/WhPlJzh.jpeg" group-title="Uncategorized",ABNsat (720p)
-https://mediaserver.abnvideos.com/streams/abnsat.m3u8
-#EXTINF:-1 tvg-name="ABN Urdu (540p)" tvg-logo="https://i.imgur.com/Y9ScPIl.png" group-title="Uncategorized",ABN Urdu (540p)
-https://mediaserver.abnvideos.com/streams/abnurdu.m3u8
-#EXTINF:-1 tvg-name="7/8 TV" tvg-logo="https://upload.wikimedia.org/wikipedia/commons/thumb/1/1c/Seven-Eight-TV.png/960px-Seven-Eight-TV.png" group-title="Uncategorized",7/8 TV
-http://213.91.179.28:8000/play/a0cn
-#EXTINF:-1 tvg-name="Aastha (576p)" tvg-logo="https://i.imgur.com/IqgrV92.png" group-title="Indian TV",Aastha (576p)
-http://163.61.226.31:9981/stream/channelid/565086134?profile=pass
 #EXTINF:-1 tvg-name="BBC Earth US (1080p)" tvg-logo="https://upload.wikimedia.org/wikipedia/commons/7/7e/BBC_Earth_2023.svg" group-title="English TV",BBC Earth US (1080p)
 https://amg00793-amg00793c6-vizio-us-2670.playouts.now.amagi.tv/playlist/amg00793-bbcstudios-bbcearthaall-vizious/playlist.m3u8
-#EXTINF:-1 tvg-name="Animax Asia Taiwan" tvg-logo="https://upload.wikimedia.org/wikipedia/commons/thumb/6/6f/Animax.png/960px-Animax.png" group-title="Kids",Animax Asia Taiwan
-http://125.227.210.55:3056/VideoInput/play.ts
-#EXTINF:-1 tvg-name="BBC Arabic (720p)" tvg-logo="https://i.imgur.com/ScyTG6P.png" group-title="Uncategorized",BBC Arabic (720p)
-https://vs-cmaf-pushb-ww-live.akamaized.net/x=4/i=urn:bbc:pips:service:bbc_arabic_tv/pc_hd_abr_v2.mpd
-#EXTINF:-1 tvg-name="Bloomberg TV Bulgaria" tvg-logo="https://i.imgur.com/cHwOVqk.png" group-title="Uncategorized",Bloomberg TV Bulgaria
-http://213.91.179.28:8000/play/a04m
 #EXTINF:-1 tvg-name="Bloomberg TV Asia Live Event (720p)" tvg-logo="https://i.imgur.com/OuogLHx.png" group-title="English TV",Bloomberg TV Asia Live Event (720p)
 https://bloomberg.com/media-manifest/streams/asia-event.m3u8
-#EXTINF:-1 tvg-name="Acasa (1080p)" tvg-logo="https://upload.wikimedia.org/wikipedia/commons/thumb/4/49/Acasa_2022_flat.png/960px-Acasa_2022_flat.png" group-title="Uncategorized",Acasa (1080p)
-http://rpprod.hbbtv.cdn.cra.cz:8080/hbbTV/cme-ro-pro2/live_fullhd?offsetSeconds=0
-#EXTINF:-1 tvg-name="Acasa Gold (1080p)" tvg-logo="https://static.wikia.nocookie.net/logopedia/images/f/fb/Acasa_Gold_2022.svg/revision/latest/scale-to-width-down/512" group-title="Uncategorized",Acasa Gold (1080p)
-http://rpprod.hbbtv.cdn.cra.cz:8080/hbbTV/cme-ro-progold/live_fullhd?offsetSeconds=0
 #EXTINF:-1 tvg-name="Bloomberg TV EMEA Live Event (720p)" tvg-logo="https://i.imgur.com/OuogLHx.png" group-title="English TV",Bloomberg TV EMEA Live Event (720p)
 https://bloomberg.com/media-manifest/streams/eu-event.m3u8
-#EXTINF:-1 tvg-name="555 (720p)" tvg-logo="https://i.imgur.com/JQZkxeA.png" group-title="Uncategorized",555 (720p)
-http://trk555.tv:8888/live
-#EXTINF:-1 tvg-name="Al-Bahjah TV (1080p)" tvg-logo="https://i.imgur.com/52dlDZk.png" group-title="Uncategorized",Al-Bahjah TV (1080p)
-http://202.150.161.117:8000/play/AlBahjahTV
 #EXTINF:-1 tvg-name="Bloomberg TV Live Event (720p)" tvg-logo="https://i.imgur.com/OuogLHx.png" group-title="English TV",Bloomberg TV Live Event (720p)
 https://bloomberg.com/media-manifest/streams/us-event.m3u8
 #EXTINF:-1 tvg-name="Bloomberg TV Politics Live Event (720p)" tvg-logo="https://i.imgur.com/OuogLHx.png" group-title="English TV",Bloomberg TV Politics Live Event (720p)
 https://bloomberg.com/media-manifest/streams/politics.m3u8
-#EXTINF:-1 tvg-name="Benin Web TV (720p)" tvg-logo="https://i.imgur.com/CYy4n0N.png" group-title="Uncategorized",Benin Web TV (720p)
-https://stream.beninwebtv.bj/2/live/stream.m3u8
-#EXTINF:-1 tvg-name="Balle Balle HD (720p)" tvg-logo="https://jiotvimages.cdn.jio.com/dare_images/images/Balle_Balle_TV.png" group-title="Indian Music",Balle Balle HD (720p)
-https://mcncdndigital.com/balleballetv/index.m3u8
