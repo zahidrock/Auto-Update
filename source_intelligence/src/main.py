@@ -129,13 +129,13 @@ def host_allowed(url, setting_name):
     return bool(host) and any(host == domain or host.endswith("." + domain) for domain in allowed)
 
 def is_approved_source(url):
-    # Source provenance must begin on a broadcaster-controlled domain listed
-    # in approved_source_hosts. Public community playlists are not authorization.
-    return is_public_candidate(url) and host_allowed(url, "approved_source_hosts")
+    # Public source pages and playlists are eligible regardless of publisher.
+    # Public accessibility is not proof of licensing; this is only a network-safety check.
+    return is_public_candidate(url)
 
 def is_approved_stream(url):
-    # An external CDN is acceptable only when its URL was published by an
-    # approved official source page; add_channel() enforces that provenance.
+    # Accept globally routable public stream hosts while rejecting private,
+    # credential-bearing, signed, or expiring URLs.
     return is_public_candidate(url)
 
 def approved_get(url, policy, **kwargs):
