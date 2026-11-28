@@ -1,1 +1,33 @@
 #EXTM3U
+#EXTINF:-1 tvg-name="A&E Latin America Brazil (720p)" tvg-logo="https://upload.wikimedia.org/wikipedia/commons/thumb/d/df/A%26E_Network_logo.svg/960px-A%26E_Network_logo.svg.png" group-title="Uncategorized",A&E Latin America Brazil (720p)
+http://79.127.238.228:14551
+#EXTINF:-1 tvg-name="AXN Black (United States)" tvg-logo="https://i.imgur.com/Peo1QiZ.png" group-title="Uncategorized",AXN Black (United States)
+http://85.14.32.26:8800/udp/239.100.10.17:5000
+#EXTINF:-1 tvg-name="AXN White (United States) Bulgaria" tvg-logo="https://i.imgur.com/47IKxmt.png" group-title="Uncategorized",AXN White (United States) Bulgaria
+http://85.14.32.26:8800/udp/239.100.10.18:5000
+#EXTINF:-1 tvg-name="Animax Asia Taiwan" tvg-logo="https://upload.wikimedia.org/wikipedia/commons/thumb/6/6f/Animax.png/960px-Animax.png" group-title="Kids",Animax Asia Taiwan
+http://125.227.210.55:3056/VideoInput/play.ts
+#EXTINF:-1 tvg-name="Animal Planet (Bulgaria)" tvg-logo="https://i.postimg.cc/pd0kmDgK/Animal-Planet-Logo-PNG12.png" group-title="Uncategorized",Animal Planet (Bulgaria)
+http://213.91.179.28:8000/play/a05r
+#EXTINF:-1 tvg-name="7/8 TV" tvg-logo="https://upload.wikimedia.org/wikipedia/commons/thumb/1/1c/Seven-Eight-TV.png/960px-Seven-Eight-TV.png" group-title="Uncategorized",7/8 TV
+http://213.91.179.28:8000/play/a0cn
+#EXTINF:-1 tvg-name="Aastha (576p)" tvg-logo="https://i.imgur.com/IqgrV92.png" group-title="Uncategorized",Aastha (576p)
+http://163.61.226.31:9981/stream/channelid/565086134?profile=pass
+#EXTINF:-1 tvg-name="AXN Asia Taiwan (1080p)" tvg-logo="https://upload.wikimedia.org/wikipedia/commons/thumb/5/52/AXN_logo_%282015%29.svg/960px-AXN_logo_%282015%29.svg.png" group-title="Uncategorized",AXN Asia Taiwan (1080p)
+http://125.227.210.55:4050/VideoInput/play.ts
+#EXTINF:-1 tvg-name="ABC News Live (720p)" tvg-logo="https://upload.wikimedia.org/wikipedia/commons/thumb/6/63/ABC_News_Live_logo_2021.svg/960px-ABC_News_Live_logo_2021.svg.png" group-title="Uncategorized",ABC News Live (720p)
+https://jmp2.uk/plu-6508be683a0d700008c534e4.m3u8
+#EXTINF:-1 tvg-name="BET Throwbacks" tvg-logo="https://images.pluto.tv/channels/61326275b3c86a00078e4833/colorLogoPNG_1759340015358.png" group-title="Uncategorized",BET Throwbacks
+https://jmp2.uk/plu-61326275b3c86a00078e4833.m3u8
+#EXTINF:-1 tvg-name="555 (720p)" tvg-logo="https://i.imgur.com/JQZkxeA.png" group-title="Uncategorized",555 (720p)
+http://trk555.tv:8888/live
+#EXTINF:-1 tvg-name="Al-Bahjah TV (1080p)" tvg-logo="https://i.imgur.com/52dlDZk.png" group-title="Uncategorized",Al-Bahjah TV (1080p)
+http://202.150.161.117:8000/play/AlBahjahTV
+#EXTINF:-1 tvg-name="Acasa Gold (1080p)" tvg-logo="https://static.wikia.nocookie.net/logopedia/images/f/fb/Acasa_Gold_2022.svg/revision/latest/scale-to-width-down/512" group-title="Uncategorized",Acasa Gold (1080p)
+http://rpprod.hbbtv.cdn.cra.cz:8080/hbbTV/cme-ro-progold/live_fullhd?offsetSeconds=0
+#EXTINF:-1 tvg-name="AMC Europe Bulgary" tvg-logo="https://upload.wikimedia.org/wikipedia/commons/thumb/3/34/AMC_logo_2019.svg/960px-AMC_logo_2019.svg.png" group-title="Uncategorized",AMC Europe Bulgary
+http://212.70.131.37:8000/play/a05k
+#EXTINF:-1 tvg-name="Andromeda" tvg-logo="https://i.imgur.com/6ot2lmd.png" group-title="Uncategorized",Andromeda
+https://jmp2.uk/plu-6850335b5965a2fd49f7e36d.m3u8
+#EXTINF:-1 tvg-name="ABN Urdu (540p)" tvg-logo="https://i.imgur.com/Y9ScPIl.png" group-title="Uncategorized",ABN Urdu (540p)
+https://mediaserver.abnvideos.com/streams/abnurdu.m3u8
