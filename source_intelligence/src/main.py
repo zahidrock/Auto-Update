@@ -56,6 +56,10 @@ def connect():
       segment_ok INTEGER DEFAULT 0, error TEXT, last_checked TEXT
     );
     CREATE INDEX IF NOT EXISTS idx_links_channel ON links(channel_id);
+    CREATE TABLE IF NOT EXISTS candidate_streams(
+      url TEXT PRIMARY KEY, source_url TEXT NOT NULL, discovered_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      status TEXT DEFAULT 'candidate', notes TEXT
+    );
     """)
     # Migrate registries created by earlier runs before last_checked was added.
     columns = {row[1] for row in db.execute("PRAGMA table_info(links)")}
@@ -225,23 +229,25 @@ def discover_playlist_refs(body, base_url):
     return refs
 
 def discover_stream_refs(body, page_url):
-    # Extract direct HLS links only from an already-approved official broadcaster page.
+    # Extract HLS candidates only from an already-approved official broadcaster page.
+    # Candidates on unverified CDN hosts are recorded for review, never fetched or published.
     refs = []
     pattern = r"""https?://[^\s"'<>]+|(?:\./|/)[^\s"'<>]+\.m3u8(?:\?[^\s"'<>]*)?"""
     candidates = re.findall(pattern, body, re.I)
-    slug = Path(urlparse(page_url).path.rstrip("/")).name or "Official BTV Live"
+    slug = Path(urlparse(page_url).path.rstrip("/")).name or "Official live page"
     name = re.sub(r"[-_]+", " ", slug).strip()
     for candidate in candidates:
         candidate = candidate.rstrip("),.;]}'")
-        absolute = urljoin(page_url, candidate)
-        if re.search(r"\.m3u8(?:$|[?#])", absolute, re.I) and is_approved_stream(absolute):
+        absolute = canonical_url(urljoin(page_url, candidate))
+        if re.search(r"\.m3u8(?:$|[?#])", absolute, re.I) and is_public_candidate(absolute):
             refs.append({
                 "name": name,
-                "category": "Bangladesh TV",
-                "country": "bd",
-                "language": "ben",
-                "url": canonical_url(absolute),
+                "category": "Unverified",
+                "country": "",
+                "language": "",
+                "url": absolute,
                 "source_url": page_url,
+                "approved": is_approved_stream(absolute),
             })
     return refs
 
@@ -350,7 +356,14 @@ def discover(db):
                           last_error=NULL,entries_found=?,stream_candidates=? WHERE url=?""",
                        (source_state, status, entries_found, stream_candidates, requested))
             for stream_entry in stream_entries:
-                add_channel(db, stream_entry)
+                if stream_entry.get("approved"):
+                    add_channel(db, stream_entry)
+                else:
+                    db.execute(
+                        "INSERT OR IGNORE INTO candidate_streams(url,source_url,notes) VALUES(?,?,?)",
+                        (stream_entry["url"], stream_entry["source_url"],
+                         "Found on an approved official broadcaster page; CDN host not yet approved")
+                    )
             for nested in sorted(nested_sources):
                 if depth < SETTINGS["max_recursive_depth"] and nested not in visited:
                     db.execute("INSERT OR IGNORE INTO sources(url,discovered_from,depth) VALUES(?,?,?)",
@@ -457,6 +470,17 @@ def write_source_report(db):
     logging.info("Source diagnostics written for %d sources", len(rows))
 
 
+def write_candidate_report(db):
+    rows = db.execute("""SELECT url, source_url, discovered_at, status, COALESCE(notes,'')
+                         FROM candidate_streams ORDER BY discovered_at DESC, source_url""").fetchall()
+    with (OUT_DIR / "candidate_stream_report.csv").open("w", encoding="utf-8", newline="") as f:
+        import csv
+        writer = csv.writer(f)
+        writer.writerow(["candidate_stream_url", "official_source_page", "discovered_at", "review_status", "notes"])
+        writer.writerows(rows)
+    logging.info("Unverified HLS candidates awaiting review: %d", len(rows))
+
+
 def write_link_health_report(db):
     rows = db.execute("""SELECT c.name, c.category, l.url, COALESCE(l.source_url,''),
                                 l.status, l.http_status, l.ttfb, l.total_seconds,
@@ -479,6 +503,7 @@ def write_link_health_report(db):
 def generate(db):
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     write_source_report(db)
+    write_candidate_report(db)
     write_link_health_report(db)
     base = db.execute("""SELECT c.name,c.logo,c.category,l.url,l.status,l.bytes_per_second,l.ttfb
                          FROM links l JOIN channels c ON c.id=l.channel_id
