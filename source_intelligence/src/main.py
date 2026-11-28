@@ -459,6 +459,43 @@ def discover(db):
                          requested, entries_found, stream_candidates, len(nested_sources))
         db.commit()
 
+
+def recategorize_channels(db):
+    """Reclassify existing registry rows after category rules improve."""
+    rows = db.execute("""
+        SELECT c.id, c.name, c.category, c.normalized_name,
+               l.url, COALESCE(l.source_url,'')
+        FROM channels c JOIN links l ON l.channel_id=c.id
+        ORDER BY c.id, l.id
+    """).fetchall()
+    grouped = {}
+    for channel_id, name, current, normalized, url, source_url in rows:
+        grouped.setdefault(channel_id, {
+            "name": name, "current": current, "normalized": normalized, "categories": []
+        })
+        category = category_for(name, "", url, source_url)
+        if category != "Uncategorized" and category not in grouped[channel_id]["categories"]:
+            grouped[channel_id]["categories"].append(category)
+
+    changed = 0
+    for channel_id, item in grouped.items():
+        desired = item["categories"][0] if item["categories"] else item["current"]
+        if desired == item["current"]:
+            continue
+        target = db.execute(
+            "SELECT id FROM channels WHERE normalized_name=? AND category=? AND id<>?",
+            (item["normalized"], desired, channel_id)
+        ).fetchone()
+        if target:
+            db.execute("UPDATE links SET channel_id=? WHERE channel_id=?", (target[0], channel_id))
+            db.execute("DELETE FROM channels WHERE id=?", (channel_id,))
+        else:
+            db.execute("UPDATE channels SET category=? WHERE id=?", (desired, channel_id))
+        changed += 1
+    db.commit()
+    logging.info("Reclassified %d existing channels using playlist index metadata", changed)
+
+
 def check_link(row):
     link_id, url, source_url = row
     if not is_approved_stream(url):
@@ -624,6 +661,7 @@ def main():
         load_seeds(db)
         discover_github_playlist_sources(db)
         discover(db)
+        recategorize_channels(db)
         validate(db)
         generate(db)
     finally:
