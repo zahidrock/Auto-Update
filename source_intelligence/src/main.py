@@ -5,8 +5,11 @@ import ipaddress
 import json
 import logging
 import re
+import socket
 import sqlite3
 import time
+import os
+from functools import lru_cache
 from collections import defaultdict
 from pathlib import Path
 from urllib.parse import urljoin, urlparse
@@ -81,21 +84,32 @@ def connect():
 def canonical_url(url):
     return url.strip().replace("&amp;", "&")
 
+@lru_cache(maxsize=8192)
+def public_host_resolves_globally(host):
+    if host in ("localhost", "localhost.localdomain") or host.endswith((".local", ".internal", ".localhost")):
+        return False
+    try:
+        address = ipaddress.ip_address(host)
+        return address.is_global
+    except ValueError:
+        pass
+    try:
+        resolved = {item[4][0].split("%", 1)[0] for item in socket.getaddrinfo(host, None, type=socket.SOCK_STREAM)}
+        return bool(resolved) and all(ipaddress.ip_address(value).is_global for value in resolved)
+    except (OSError, ValueError):
+        return False
+
+
 def is_public_candidate(url):
     parsed = urlparse(url)
     if parsed.scheme not in ("http", "https") or parsed.username or parsed.password or not parsed.hostname:
         return False
     host = parsed.hostname.lower().rstrip(".")
-    if host in ("localhost", "localhost.localdomain") or host.endswith((".local", ".internal", ".localhost")):
+    if not public_host_resolves_globally(host):
         return False
-    try:
-        address = ipaddress.ip_address(host)
-        if not address.is_global:
-            return False
-    except ValueError:
-        pass
-    # Avoid publishing signed or credential-bearing URLs into this public repository.
-    return not bool(re.search(r"[?&](?:access_?token|api_?key|auth|authorization|password|passwd|secret|signature|sig|token|x-amz-signature)=", url, re.I))
+    # Never publish credential-bearing or expiring signed URLs to this public repository.
+    sensitive = r"[?&](?:access_?token|api_?key|auth|authorization|password|passwd|secret|signature|sig|token|x-amz-(?:signature|credential)|x-goog-signature)="
+    return not bool(re.search(sensitive, url, re.I))
 
 def host_allowed(url, setting_name):
     host = (urlparse(url).hostname or "").lower().rstrip(".")
@@ -106,7 +120,9 @@ def is_approved_source(url):
     return is_public_candidate(url) and host_allowed(url, "approved_source_hosts")
 
 def is_approved_stream(url):
-    return is_public_candidate(url) and host_allowed(url, "approved_stream_hosts")
+    # Streams may be hosted on any globally reachable public CDN/provider.
+    # The public URL, redirect targets, and HLS segments are still screened.
+    return is_public_candidate(url)
 
 def approved_get(url, policy, **kwargs):
     # Follow redirects only when every hop remains on an approved host.
@@ -132,6 +148,62 @@ def is_free_to_air_label(name, group=""):
     label = f"{name or ''} {group or ''}".lower()
     blocked = r"\b(?:geo[- ]?blocked|pay[- ]?tv|subscription|premium channel|requires? login|drm)\b"
     return not bool(re.search(blocked, label, re.I))
+
+def discover_github_playlist_sources(db):
+    """Discover public M3U files in GitHub repositories using the public GitHub API."""
+    headers = {"Accept": "application/vnd.github+json", "User-Agent": UA}
+    token = os.getenv("GITHUB_TOKEN") or os.getenv("GH_TOKEN")
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+    try:
+        response = SESSION.get(
+            "https://api.github.com/search/repositories",
+            params={"q": "iptv playlist m3u in:name,description", "sort": "updated",
+                    "order": "desc", "per_page": 30},
+            headers=headers, timeout=SETTINGS["request_timeout_seconds"])
+        response.raise_for_status()
+        repositories = response.json().get("items", [])
+    except Exception as exc:
+        logging.warning("GitHub public repository search failed: %s", str(exc)[:200])
+        return
+    added = 0
+    for repo in repositories[:8]:
+        full_name = repo.get("full_name", "")
+        branch = repo.get("default_branch", "main")
+        if not full_name or repo.get("archived") or repo.get("disabled"):
+            continue
+        tree_url = f"https://api.github.com/repos/{full_name}/git/trees/{branch}"
+        try:
+            tree_response = SESSION.get(tree_url, params={"recursive": "1"}, headers=headers,
+                                       timeout=SETTINGS["request_timeout_seconds"])
+            tree_response.raise_for_status()
+            tree = tree_response.json().get("tree", [])
+        except Exception as exc:
+            logging.info("Skipping GitHub tree %s: %s", full_name, str(exc)[:160])
+            continue
+        found = 0
+        for item in tree:
+            path = item.get("path", "")
+            if item.get("type") != "blob" or not path.lower().endswith((".m3u", ".m3u8")):
+                continue
+            if item.get("size", 0) > 8_000_000 or any(
+                word in path.lower() for word in ("/test", "/sample", "/backup", "/archive")
+            ):
+                continue
+            raw_url = f"https://raw.githubusercontent.com/{full_name}/{branch}/{path}"
+            if is_approved_source(raw_url):
+                db.execute("INSERT OR IGNORE INTO sources(url,discovered_from,depth) VALUES(?,?,0)",
+                           (raw_url, f"github repository search: {full_name}"))
+                added += 1
+                found += 1
+            if found >= 8 or added >= 40:
+                break
+        logging.info("GitHub discovery: %s yielded %d playlist files", full_name, found)
+        if added >= 40:
+            break
+    db.commit()
+    logging.info("GitHub public repository discovery added %d playlist sources", added)
+
 
 def load_seeds(db):
     urls = []
@@ -229,12 +301,12 @@ def discover_playlist_refs(body, base_url):
     return refs
 
 def discover_stream_refs(body, page_url):
-    # Extract HLS candidates only from an already-approved official broadcaster page.
-    # Candidates on unverified CDN hosts are recorded for review, never fetched or published.
+    # Extract public HLS candidates from any approved public source page.
+    # They still pass public-host, redirect, token, and media validation checks.
     refs = []
     pattern = r"""https?://[^\s"'<>]+|(?:\./|/)[^\s"'<>]+\.m3u8(?:\?[^\s"'<>]*)?"""
     candidates = re.findall(pattern, body, re.I)
-    slug = Path(urlparse(page_url).path.rstrip("/")).name or "Official live page"
+    slug = Path(urlparse(page_url).path.rstrip("/")).name or "Public stream page"
     name = re.sub(r"[-_]+", " ", slug).strip()
     for candidate in candidates:
         candidate = candidate.rstrip("),.;]}'")
@@ -362,7 +434,7 @@ def discover(db):
                     db.execute(
                         "INSERT OR IGNORE INTO candidate_streams(url,source_url,notes) VALUES(?,?,?)",
                         (stream_entry["url"], stream_entry["source_url"],
-                         "Found on an approved official broadcaster page; CDN host not yet approved")
+                         "Found on a public source page; awaiting stream validation")
                     )
             for nested in sorted(nested_sources):
                 if depth < SETTINGS["max_recursive_depth"] and nested not in visited:
@@ -541,6 +613,7 @@ def main():
     try:
         prune_unapproved(db)
         load_seeds(db)
+        discover_github_playlist_sources(db)
         discover(db)
         validate(db)
         generate(db)
