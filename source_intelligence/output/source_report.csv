@@ -1,6 +1,6 @@
 source_url,discovered_from,depth,status,http_status,last_checked,last_error,entries_found,stream_candidates
-https://btvlive.gov.bd/,seed,0,done,,2026-11-27 02:15:41,,0,0
-https://btvlive.gov.bd/channel/BTV,seed,0,done,,2026-11-27 02:15:41,,0,0
-https://btvlive.gov.bd/channel/BTV-Chattogram,seed,0,done,,2026-11-27 02:15:41,,0,0
-https://btvlive.gov.bd/channel/BTV-News,seed,0,done,,2026-11-27 02:15:41,,0,0
-https://btvlive.gov.bd/channel/Sangsad-Television,seed,0,done,,2026-11-27 02:15:41,,0,0
+https://btvlive.gov.bd/,seed,0,done,200,2026-11-28 02:08:20,,4,4
+https://btvlive.gov.bd/channel/BTV,seed,0,done,200,2026-11-28 02:08:20,,8,8
+https://btvlive.gov.bd/channel/BTV-Chattogram,seed,0,done,200,2026-11-28 02:08:20,,8,8
+https://btvlive.gov.bd/channel/BTV-News,seed,0,done,200,2026-11-28 02:08:20,,8,8
+https://btvlive.gov.bd/channel/Sangsad-Television,seed,0,done,200,2026-11-28 02:08:20,,8,8
