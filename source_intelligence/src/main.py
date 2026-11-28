@@ -446,9 +446,29 @@ def write_source_report(db):
     logging.info("Source diagnostics written for %d sources", len(rows))
 
 
+def write_link_health_report(db):
+    rows = db.execute("""SELECT c.name, c.category, l.url, COALESCE(l.source_url,''),
+                                l.status, l.http_status, l.ttfb, l.total_seconds,
+                                l.bytes_per_second, l.segment_ok, COALESCE(l.error,''),
+                                l.last_checked
+                         FROM links l JOIN channels c ON c.id=l.channel_id
+                         ORDER BY c.category, c.name, l.status, l.url""").fetchall()
+    with (OUT_DIR / "link_health_report.csv").open("w", encoding="utf-8", newline="") as f:
+        import csv
+        writer = csv.writer(f)
+        writer.writerow(["channel", "category", "stream_url", "source_url", "status",
+                         "http_status", "ttfb_seconds", "total_seconds", "bytes_per_second",
+                         "segment_ok", "error", "last_checked"])
+        writer.writerows(rows)
+    status_counts = db.execute("SELECT status, COUNT(*) FROM links GROUP BY status").fetchall()
+    logging.info("Link health: %s", ", ".join(f"{status}={count}" for status, count in status_counts) or "no links")
+    logging.info("Link diagnostics written for %d links", len(rows))
+
+
 def generate(db):
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     write_source_report(db)
+    write_link_health_report(db)
     base = db.execute("""SELECT c.name,c.logo,c.category,l.url,l.status,l.bytes_per_second,l.ttfb
                          FROM links l JOIN channels c ON c.id=l.channel_id
                          WHERE l.status IN ('fast','slow') ORDER BY l.bytes_per_second DESC""").fetchall()
