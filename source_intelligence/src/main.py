@@ -164,7 +164,7 @@ def is_free_to_air_label(name, group=""):
     blocked = (
         r"\b(?:geo[- ]?blocked|pay[- ]?tv|subscription(?:[- ]only)?|"
         r"premium(?:\s+(?:channel|sports|movie|package))?|requires?\s+login|drm|"
-        r"hbo|cinemax|showtime|starz|dazn|be\s*in(?:\s*sports)?|canal\s*\+|"
+        r"hbo|cinemax|showtime|starz|dazn|be\s*in(?:\s*sports)?|"
         r"sky\s*(?:sports|cinema)|eurosport|espn|fox\s*sports|sportsnet|tsn|"
         r"discovery(?:\s+(?:channel|asia|turbo))?|animal\s+planet|history(?:\s+channel)?|"
         r"axn|filmbox|sony\s*(?:ten|sports)|star\s*sports|colors?\s*cineplex|"
@@ -172,7 +172,7 @@ def is_free_to_air_label(name, group=""):
         r"fx\s+(?:latin|asia)|globoplay|netflix|prime\s+video|peacock|hulu|apple\s*tv\+)"
         r"\b"
     )
-    return not bool(re.search(blocked, label, re.I))
+    return not (bool(re.search(blocked, label, re.I)) or bool(re.search(r"\bcanal\s*\+", label, re.I)))
 
 def load_seeds(db):
     urls = []
