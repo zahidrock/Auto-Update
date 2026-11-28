@@ -409,13 +409,27 @@ def add_channel(db, entry):
                (name, entry.get("tvg_id", ""), entry.get("logo", ""), cat, norm))
     row = db.execute("SELECT id FROM channels WHERE normalized_name=? AND category=?", (norm, cat)).fetchone()
     if row:
-        db.execute("""INSERT OR IGNORE INTO links(
+        db.execute("""INSERT INTO links(
                           channel_id,url,source_url,source_name,group_title,country,language,tvg_id,logo
-                      ) VALUES(?,?,?,?,?,?,?,?,?)""",
+                      ) VALUES(?,?,?,?,?,?,?,?,?)
+                      ON CONFLICT(url) DO UPDATE SET
+                        group_title=CASE WHEN excluded.group_title<>'' THEN excluded.group_title ELSE links.group_title END,
+                        country=CASE WHEN excluded.country<>'' THEN excluded.country ELSE links.country END,
+                        language=CASE WHEN excluded.language<>'' THEN excluded.language ELSE links.language END,
+                        tvg_id=CASE WHEN excluded.tvg_id<>'' THEN excluded.tvg_id ELSE links.tvg_id END,
+                        logo=CASE WHEN excluded.logo<>'' THEN excluded.logo ELSE links.logo END,
+                        source_url=CASE
+                          WHEN lower(excluded.source_url) LIKE '%/countries/bd.%'
+                            OR lower(excluded.source_url) LIKE '%/countries/in.%'
+                            OR lower(excluded.source_url) LIKE '%/languages/eng.%'
+                            OR lower(excluded.source_url) LIKE '%/categories/%'
+                          THEN excluded.source_url ELSE links.source_url END,
+                        last_seen=CURRENT_TIMESTAMP""",
                    (row[0], entry["url"], source_url,
                     entry.get("source_name", "public playlist"), group,
                     entry.get("country", ""), entry.get("language", ""),
                     entry.get("tvg_id", ""), entry.get("logo", "")))
+        # Merge metadata from duplicate appearances of the same stream URL.
         db.execute("UPDATE links SET last_seen=CURRENT_TIMESTAMP WHERE url=?", (entry["url"],))
 
 
