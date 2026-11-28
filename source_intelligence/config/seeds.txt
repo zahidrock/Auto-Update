@@ -7,3 +7,7 @@ https://btvlive.gov.bd/channel/BTV-News
 https://btvlive.gov.bd/channel/BTV-Chattogram
 https://btvlive.gov.bd/channel/Sangsad-Television
 https://live.btv.gov.bd/
+# Official Prasar Bharati / WAVES public pages (discovery only; not proof of direct-stream rights).
+https://prasarbharati.gov.in/en/waves/
+https://newsonair.gov.in/
+https://www.wavespb.com/
