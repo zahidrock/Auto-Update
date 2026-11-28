@@ -43,5 +43,42 @@
     "Sports": [
       "sports"
     ]
-  }
+  },
+  "authorized_free_to_air_streams": [
+    {
+      "channel_pattern": "^ABC News Live(?: [0-9]+)?(?: \\([0-9]+p\\))?$",
+      "url_pattern": "^https://abcnews-(?:streams|livestreams)\\.akamaized\\.net/(?:hls/live/[0-9]+/abcnewshudson[0-9]+/master\\.m3u8|out/v1/[a-f0-9]+/abcn-live-[0-9]+-cmaf-manifest/abcn-live-[0-9]+-index\\.m3u8)$",
+      "evidence_urls": [
+        "https://abc.com/news/3c07ab6c-ad82-4b62-9ee1-8bcfb9470361/category/1138628"
+      ],
+      "evidence_note": "ABC identifies ABC News Live as an always-free unlocked channel with no sign-in."
+    },
+    {
+      "channel_pattern": "^Bloomberg(?: TV(?: .*)?| Originals)(?: \\([0-9]+p\\))?$",
+      "url_pattern": "^https://bloomberg\\.com/media-manifest/streams/[a-z0-9_-]+\\.m3u8$",
+      "evidence_urls": [
+        "https://bloomberg.com/tv/livestream/",
+        "https://data.bloomberglp.com/company/sites/48/2018/03/GRI-Content-Index-.pdf"
+      ],
+      "evidence_note": "Bloomberg documents its digital live stream as free and available without authentication."
+    },
+    {
+      "channel_pattern": "^BBC Earth US(?: \\([0-9]+p\\))?$",
+      "url_pattern": "^https://amg00793-amg00793c6-vizio-us-2670\\.playouts\\.now\\.amagi\\.tv/playlist/amg00793-bbcstudios-bbcearthaall-vizious/playlist\\.m3u8$",
+      "evidence_urls": [
+        "https://www.vizio.com/en/watchfreeplus/catalog/live-tv-channels/4346259824/bbc-earth",
+        "https://www.vizio.com/en/watchfreeplus/live"
+      ],
+      "evidence_note": "VIZIO lists BBC Earth in WatchFree+ and describes WatchFree+ as free live TV."
+    },
+    {
+      "channel_pattern": "^(?:BTV|BTV News|BTV Chattogram|Sangsad Television|Bangladesh Television)(?: \\([0-9]+p\\))?$",
+      "url_pattern": "^https?://[^?\\s#]+$",
+      "source_pattern": "^https?://(?:www\\.)?btvlive\\.gov\\.bd(?:/.*)?$",
+      "evidence_urls": [
+        "https://btvlive.gov.bd/"
+      ],
+      "evidence_note": "The official Bangladesh Television portal hosts the live pages for BTV, BTV News, BTV Chattogram and Sangsad Television."
+    }
+  ]
 }

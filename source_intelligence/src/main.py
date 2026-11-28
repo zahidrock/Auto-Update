@@ -161,7 +161,7 @@ def approved_get(url, policy, **kwargs):
 def is_free_to_air_label(name, group=""):
     label = f"{name or ''} {group or ''}".lower()
     # Conservative deny-list for subscription, premium and known pay-TV brands.
-    # Unknown labels are allowed when found in a public playlist; this deny-list only removes known restricted brands.
+    # This deny-list catches known restricted brands; an evidence-backed allowlist is required for publication.
     blocked = (
         r"\b(?:geo[- ]?blocked|pay[- ]?tv|subscription(?:[- ]only)?|"
         r"premium(?:\s+(?:channel|sports|movie|package))?|requires?\s+login|drm|"
@@ -174,6 +174,27 @@ def is_free_to_air_label(name, group=""):
         r"\b"
     )
     return not (bool(re.search(blocked, label, re.I)) or bool(re.search(r"\bcanal\s*\+", label, re.I)))
+
+
+def is_authorized_free_to_air_stream(url, name, group="", source_url=""):
+    """Allow publication only when a public broadcaster/FAST source documents free viewing."""
+    if (not is_approved_source(source_url) or not is_approved_stream(url)
+            or not is_free_to_air_label(name, group)):
+        return False
+    for rule in SETTINGS.get("authorized_free_to_air_streams", []):
+        channel_pattern = rule.get("channel_pattern", "")
+        url_pattern = rule.get("url_pattern", "")
+        if not channel_pattern or not url_pattern or not (rule.get("evidence_url") or rule.get("evidence_urls")):
+            continue
+        if not re.fullmatch(channel_pattern, name or "", re.I):
+            continue
+        if not re.fullmatch(url_pattern, url or "", re.I):
+            continue
+        source_pattern = rule.get("source_pattern")
+        if source_pattern and not re.fullmatch(source_pattern, source_url or "", re.I):
+            continue
+        return True
+    return False
 
 def load_seeds(db):
     urls = []
@@ -208,8 +229,9 @@ def parse_playlist(text, source_url):
             }
         elif line.startswith(("http://", "https://")):
             if meta:
-                if is_approved_stream(line) and is_free_to_air_label(meta.get("name"), meta.get("category")):
-                    entries.append({**meta, "url": canonical_url(line), "source_url": source_url})
+                stream_url = canonical_url(line)
+                if is_authorized_free_to_air_stream(stream_url, meta.get("name"), meta.get("category"), source_url):
+                    entries.append({**meta, "url": stream_url, "source_url": source_url})
                 meta = None
             elif is_approved_source(line) and re.search(r'\.m3u(?:$|[?#])', line, re.I):
                 entries.append({"name": Path(urlparse(line).path).name or "Nested playlist",
@@ -339,9 +361,7 @@ def add_channel(db, entry):
     name = entry.get("name") or "Unknown"
     group = entry.get("category", "")
     source_url = entry.get("source_url", "")
-    if (not is_approved_source(source_url)
-            or not is_approved_stream(entry["url"])
-            or not is_free_to_air_label(name, group)):
+    if not is_authorized_free_to_air_stream(entry["url"], name, group, source_url):
         return
     cat = category_for(name, group, entry["url"], source_url,
                        entry.get("country", ""), entry.get("language", ""))
@@ -382,8 +402,7 @@ def prune_unapproved(db):
         FROM links l JOIN channels c ON c.id=l.channel_id
     """).fetchall()
     for link_id, url, source_url, name, group in rows:
-        if (not is_approved_stream(url) or not is_approved_source(source_url)
-                or not is_free_to_air_label(name, group)):
+        if not is_authorized_free_to_air_stream(url, name, group, source_url):
             bad_links.append((link_id,))
     if bad_links:
         db.executemany("DELETE FROM links WHERE id=?", bad_links)
@@ -405,7 +424,7 @@ def prune_unapproved(db):
     db.execute("DELETE FROM channels WHERE NOT EXISTS (SELECT 1 FROM links WHERE links.channel_id=channels.id)")
     db.commit()
     logging.info(
-        "Removed %d unapproved/pay-TV links, %d unapproved sources and %d unapproved candidates",
+        "Removed %d non-authorized stream links, %d unapproved sources and %d unapproved candidates",
         len(bad_links), len(bad_sources), len(bad_candidates)
     )
 
@@ -708,8 +727,7 @@ def generate(db):
                                 COALESCE(l.source_url,'')
                          FROM links l JOIN channels c ON c.id=l.channel_id
                          WHERE l.status IN ('fast','slow') ORDER BY l.bytes_per_second DESC""").fetchall()
-    base = [r for r in base if is_approved_source(r[7]) and is_approved_stream(r[3])
-            and is_free_to_air_label(r[0], r[2])]
+    base = [r for r in base if is_authorized_free_to_air_stream(r[3], r[0], r[2], r[7])]
     best = {}
     for name,logo,cat,url,status,speed,ttfb,source_url in base:
         key = (re.sub(r"[^a-z0-9]+","",name.lower()), cat)
