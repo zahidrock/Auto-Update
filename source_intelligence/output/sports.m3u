@@ -1,6 +1,16 @@
 #EXTM3U
+#EXTINF:-1 tvg-name="Fox Sports News (1080p)" tvg-logo="https://i.imgur.com/FhMQrJk.png" group-title="Sports",Fox Sports News (1080p)
+https://skynewsau-live-premium.akamaized.net/hls/live/2105307/foxsportsnews/live_1080p.m3u8
+#EXTINF:-1 tvg-name="Eurosport 1 Romania" tvg-logo="https://i.imgur.com/olQJgm7.png" group-title="Sports",Eurosport 1 Romania
+http://89.44.231.73:7000/eurosport
+#EXTINF:-1 tvg-name="Eurosport 2 Romania" tvg-logo="https://i.imgur.com/f56dHgR.png" group-title="Sports",Eurosport 2 Romania
+http://89.44.231.73:7000/eurosport2
+#EXTINF:-1 tvg-name="Eurosport 2 Bulgaria" tvg-logo="https://i.imgur.com/f56dHgR.png" group-title="Sports",Eurosport 2 Bulgaria
+http://213.91.179.28:8000/play/a04b
 #EXTINF:-1 tvg-name="Canal+ Sport 3 SK" tvg-logo="https://static.wikia.nocookie.net/logopedia/images/4/4c/CANAL%2B_SPORT_3.svg/revision/latest?cb=20241028202810" group-title="Sports",Canal+ Sport 3 SK
 http://rpprod.hbbtv.cdn.cra.cz:8080/hbbTV/cme-sk-canal-plus-sport3/live_fullhd?offsetSeconds=0
+#EXTINF:-1 tvg-name="Eurosport 1 Bulgaria" tvg-logo="https://i.imgur.com/olQJgm7.png" group-title="Sports",Eurosport 1 Bulgaria
+http://213.91.179.28:8000/play/a05y
 #EXTINF:-1 tvg-name="Canal+ Sport SK" tvg-logo="https://static.wikia.nocookie.net/logopedia/images/2/25/Canal%2B_Sport_2023.svg/revision/latest?cb=20230901182304" group-title="Sports",Canal+ Sport SK
 http://rpprod.hbbtv.cdn.cra.cz:8080/hbbTV/cme-sk-canal-plus-sport/live_fullhd?offsetSeconds=0
 #EXTINF:-1 tvg-name="Canal+ Sport 8 SK" tvg-logo="https://static.wikia.nocookie.net/logopedia/images/6/64/Canal%2B_Sport_8.svg/revision/latest?cb=20251106141257" group-title="Sports",Canal+ Sport 8 SK

@@ -1,10 +1,38 @@
 #EXTM3U
 #EXTINF:-1 tvg-name="CityNews Edmonton" tvg-logo="https://m.media-amazon.com/images/I/51Icdznow+L.png" group-title="Uncategorized",CityNews Edmonton
 https://citynewsregional.akamaized.net/hls/live/1024053/Regional_Live_8/Video-2Mbps.m3u8
+#EXTINF:-1 tvg-name="Fox Sports News (1080p)" tvg-logo="https://i.imgur.com/FhMQrJk.png" group-title="Sports",Fox Sports News (1080p)
+https://skynewsau-live-premium.akamaized.net/hls/live/2105307/foxsportsnews/live_1080p.m3u8
+#EXTINF:-1 tvg-name="Cula4 (576p) [Not 24/7]" tvg-logo="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c0/Cula4_Purple_2022_%281%29.svg/960px-Cula4_Purple_2022_%281%29.svg.png" group-title="Kids",Cula4 (576p) [Not 24/7]
+http://41.180.140.146:4200/bysid/2106
+#EXTINF:-1 tvg-name="GloboNews (1080p)" tvg-logo="https://i.imgur.com/3yZyaCm.png" group-title="Uncategorized",GloboNews (1080p)
+http://79.127.238.228:14093
+#EXTINF:-1 tvg-name="Globoplay Novelas (1080p)" tvg-logo="https://i.ibb.co/m5TBCDL2/Globoplay-Novelas-1.png" group-title="Uncategorized",Globoplay Novelas (1080p)
+http://79.127.238.228:14455
+#EXTINF:-1 tvg-name="First Music Channel (1080p)" tvg-logo="https://i.imgur.com/YdyFJrl.png" group-title="Uncategorized",First Music Channel (1080p)
+http://rtmp.one.by:1300
+#EXTINF:-1 tvg-name="First Music Channel Russia (1080p)" tvg-logo="https://i.imgur.com/rEo7nR1.png" group-title="Uncategorized",First Music Channel Russia (1080p)
+http://rtmp.one.by:2300
 #EXTINF:-1 tvg-name="A&E Latin America Brazil (720p)" tvg-logo="https://upload.wikimedia.org/wikipedia/commons/thumb/d/df/A%26E_Network_logo.svg/960px-A%26E_Network_logo.svg.png" group-title="Uncategorized",A&E Latin America Brazil (720p)
 http://79.127.238.228:14551
+#EXTINF:-1 tvg-name="Europe 1 TV (1080p)" tvg-logo="https://i.ibb.co/rGqB5FcH/Europe1-TV.png" group-title="Uncategorized",Europe 1 TV (1080p)
+https://raw.githubusercontent.com/Paradise-91/ParaTV/main/streams/misc/europe-1-tv-dm.m3u8
+#EXTINF:-1 tvg-name="Eurosport 1 Romania" tvg-logo="https://i.imgur.com/olQJgm7.png" group-title="Sports",Eurosport 1 Romania
+http://89.44.231.73:7000/eurosport
+#EXTINF:-1 tvg-name="Eurosport 2 Romania" tvg-logo="https://i.imgur.com/f56dHgR.png" group-title="Sports",Eurosport 2 Romania
+http://89.44.231.73:7000/eurosport2
+#EXTINF:-1 tvg-name="EWTN (United States) Asia-Pacific (720p)" tvg-logo="https://play-lh.googleusercontent.com/3716tvZCgzpIt-X1giV8jKwCdC8zwOI4eMUfO_ETWzNX6eGKIi2RiUK9a_fr6BCzjw" group-title="Uncategorized",EWTN (United States) Asia-Pacific (720p)
+https://cdn3.wowza.com/1/QmVNUVhTNTZSS3Uz/YWQ0aHpi/hls/live/playlist.m3u8
+#EXTINF:-1 tvg-name="Eurosport 2 Bulgaria" tvg-logo="https://i.imgur.com/f56dHgR.png" group-title="Sports",Eurosport 2 Bulgaria
+http://213.91.179.28:8000/play/a04b
+#EXTINF:-1 tvg-name="DM Sat (576p)" tvg-logo="https://i.imgur.com/LdeA1Cn.png" group-title="Uncategorized",DM Sat (576p)
+http://85.14.32.26:8800/udp/239.100.10.40:5000
+#EXTINF:-1 tvg-name="Discovery Channel (Bulgaria)" tvg-logo="https://upload.wikimedia.org/wikipedia/commons/thumb/f/f1/2019_Discovery_logo.svg/960px-2019_Discovery_logo.svg.png" group-title="Uncategorized",Discovery Channel (Bulgaria)
+http://213.91.179.28:8000/play/a044
 #EXTINF:-1 tvg-name="AXN Black (United States)" tvg-logo="https://i.imgur.com/Peo1QiZ.png" group-title="Uncategorized",AXN Black (United States)
 http://85.14.32.26:8800/udp/239.100.10.17:5000
+#EXTINF:-1 tvg-name="FILMBOX+ Emotion Bulgaria" tvg-logo="https://spiintl.com/data/files/kcfinderUploadDir/images/filmboxplus/filmbox%2Bemotion.png" group-title="Uncategorized",FILMBOX+ Emotion Bulgaria
+http://213.91.179.28:8000/play/a04r
 #EXTINF:-1 tvg-name="AXN White (United States) Bulgaria" tvg-logo="https://i.imgur.com/47IKxmt.png" group-title="Uncategorized",AXN White (United States) Bulgaria
 http://85.14.32.26:8800/udp/239.100.10.18:5000
 #EXTINF:-1 tvg-name="Canal+ Sport 3 SK" tvg-logo="https://static.wikia.nocookie.net/logopedia/images/4/4c/CANAL%2B_SPORT_3.svg/revision/latest?cb=20241028202810" group-title="Sports",Canal+ Sport 3 SK
@@ -23,18 +51,38 @@ http://213.91.179.28:8000/play/a05r
 http://213.91.179.28:8000/play/a04i
 #EXTINF:-1 tvg-name="7/8 TV" tvg-logo="https://upload.wikimedia.org/wikipedia/commons/thumb/1/1c/Seven-Eight-TV.png/960px-Seven-Eight-TV.png" group-title="Uncategorized",7/8 TV
 http://213.91.179.28:8000/play/a0cn
+#EXTINF:-1 tvg-name="Eurosport 1 Bulgaria" tvg-logo="https://i.imgur.com/olQJgm7.png" group-title="Sports",Eurosport 1 Bulgaria
+http://213.91.179.28:8000/play/a05y
+#EXTINF:-1 tvg-name="EKids (576p)" tvg-logo="" group-title="Kids",EKids (576p)
+http://78.108.244.134:8899/ekids
+#EXTINF:-1 tvg-name="Discovery Asia Taiwan (1080p)" tvg-logo="https://i.imgur.com/foLICwL.png" group-title="Uncategorized",Discovery Asia Taiwan (1080p)
+http://125.227.210.55:1004/VideoInput/play.ts
+#EXTINF:-1 tvg-name="DD National (576p)" tvg-logo="https://ltsk-cdn.s3.eu-west-1.amazonaws.com/jumpstart/Temp_Live/cdn/HLS/Channel/transparentImages/DD%20National.png" group-title="Uncategorized",DD National (576p)
+http://163.61.226.31:9981/stream/channelid/1991369999?profile=pass
 #EXTINF:-1 tvg-name="CBeebies Asia Vietnam (720p)" tvg-logo="https://upload.wikimedia.org/wikipedia/en/thumb/1/16/CBeebies.svg/960px-CBeebies.svg.png" group-title="Kids",CBeebies Asia Vietnam (720p)
 http://antm.dynu.net:14285/rtp/232.84.3.200:11122
 #EXTINF:-1 tvg-name="Colors Cineplex Superhits (576p)" tvg-logo="https://xstreamcp-assets-msp.streamready.in/assets/LIVETV/LIVECHANNEL/LIVETV_LIVETVCHANNEL_COLORS_CINEPLEX_SUPERHITS/images/LOGO_HD/image.png" group-title="Uncategorized",Colors Cineplex Superhits (576p)
 http://163.61.226.31:9981/stream/channelid/2039746374?profile=pass
 #EXTINF:-1 tvg-name="Colors Rishtey (576p)" tvg-logo="https://xstreamcp-assets-msp.streamready.in/assets/LIVETV/LIVECHANNEL/LIVETV_LIVETVCHANNEL_COLORS_RISHTEY/images/LOGO_HD/LOGO_HD_image.png" group-title="Uncategorized",Colors Rishtey (576p)
 http://163.61.226.31:9981/stream/channelid/297962113?profile=pass
+#EXTINF:-1 tvg-name="Discovery Channel Southeast Asia (720p)" tvg-logo="https://upload.wikimedia.org/wikipedia/commons/thumb/f/f1/2019_Discovery_logo.svg/960px-2019_Discovery_logo.svg.png" group-title="Uncategorized",Discovery Channel Southeast Asia (720p)
+http://antm.dynu.net:14285/rtp/232.84.1.47:8262
+#EXTINF:-1 tvg-name="DD Punjabi (576p)" tvg-logo="https://dtil.tmsimg.com/assets/s142800_ld_h15_aa.png?lock=720x540" group-title="Uncategorized",DD Punjabi (576p)
+http://163.61.226.31:9981/stream/channelid/2094424586?profile=pass
 #EXTINF:-1 tvg-name="Aastha (576p)" tvg-logo="https://i.imgur.com/IqgrV92.png" group-title="Uncategorized",Aastha (576p)
 http://163.61.226.31:9981/stream/channelid/565086134?profile=pass
 #EXTINF:-1 tvg-name="Cine Sony (720p)" tvg-logo="https://i.imgur.com/bZWoDTg.png" group-title="Uncategorized",Cine Sony (720p)
 http://186.148.196.82:8001/play/a0a4
 #EXTINF:-1 tvg-name="Colors Cineplex Bollywood (576p)" tvg-logo="https://xstreamcp-assets-msp.streamready.in/assets/LIVETV/LIVECHANNEL/LIVETV_LIVETVCHANNEL_COLORS_CINEPLEX_BOLLYWOOD/images/LOGO_HD/image.png" group-title="Uncategorized",Colors Cineplex Bollywood (576p)
 http://163.61.226.31:9981/stream/channelid/1709941389?profile=pass
+#EXTINF:-1 tvg-name="Diema" tvg-logo="" group-title="Uncategorized",Diema
+http://213.91.179.28:8000/play/a045
+#EXTINF:-1 tvg-name="Diema Family" tvg-logo="https://i.imgur.com/SgNVY4d.png" group-title="Uncategorized",Diema Family
+http://213.91.179.28:8000/play/a047
+#EXTINF:-1 tvg-name="Euronews Bulgaria" tvg-logo="https://i.imgur.com/RrQVoOg.png" group-title="Uncategorized",Euronews Bulgaria
+http://213.91.179.28:8000/play/a05e
+#EXTINF:-1 tvg-name="FILMBOX+ One Bulgaria" tvg-logo="https://spiintl.com/data/files/kcfinderUploadDir/images/filmboxplus/filmbox%2Bone.png" group-title="Uncategorized",FILMBOX+ One Bulgaria
+http://213.91.179.28:8000/play/a06i
 #EXTINF:-1 tvg-name="Bloomberg TV Bulgaria" tvg-logo="https://i.imgur.com/cHwOVqk.png" group-title="Uncategorized",Bloomberg TV Bulgaria
 http://213.91.179.28:8000/play/a04m
 #EXTINF:-1 tvg-name="Box Hits (720p)" tvg-logo="https://i.imgur.com/kL9ubfw.png" group-title="Uncategorized",Box Hits (720p)
@@ -51,6 +99,8 @@ http://92.114.85.87:8007/play/a009
 http://213.91.179.28:8000/play/a05h
 #EXTINF:-1 tvg-name="Comedy Central (United States) CA" tvg-logo="https://images.pluto.tv/channels/64f8a408bd341e000818fcda/colorLogoPNG.png" group-title="Uncategorized",Comedy Central (United States) CA
 https://jmp2.uk/plu-64f8a408bd341e000818fcda.m3u8
+#EXTINF:-1 tvg-name="FILMBOX+ Love & Crime Bulgaria" tvg-logo="https://spiintl.com/data/files/kcfinderUploadDir/images/filmboxplus/filmbox%2Blove-and-crime.png" group-title="Uncategorized",FILMBOX+ Love & Crime Bulgaria
+http://213.91.179.28:8000/play/a066
 #EXTINF:-1 tvg-name="CineStar Action Bulgaria" tvg-logo="https://i.imgur.com/bTf7A9J.png" group-title="Uncategorized",CineStar Action Bulgaria
 http://213.91.179.28:8000/play/a06b
 #EXTINF:-1 tvg-name="AXN Asia Taiwan (1080p)" tvg-logo="https://upload.wikimedia.org/wikipedia/commons/thumb/5/52/AXN_logo_%282015%29.svg/960px-AXN_logo_%282015%29.svg.png" group-title="Uncategorized",AXN Asia Taiwan (1080p)
@@ -125,6 +175,8 @@ https://jmp2.uk/plu-65e977a618036500082ec972.m3u8
 https://jmp2.uk/plu-609ae66b359b270007869ff1.m3u8
 #EXTINF:-1 tvg-name="Comedy Central Roast" tvg-logo="https://images.pluto.tv/channels/6641fd41b18d700008e7e2b8/colorLogoPNG.png" group-title="Uncategorized",Comedy Central Roast
 https://jmp2.uk/plu-6641fd41b18d700008e7e2b8.m3u8
+#EXTINF:-1 tvg-name="Fox (United States) WTXF-TV (1080p)" tvg-logo="https://i.imgur.com/fRjmk5r.png" group-title="Uncategorized",Fox (United States) WTXF-TV (1080p)
+https://amg00488-foxdigital-fox29philadelphiawtx-vizious-x0v1b.amagi.tv/playlist/amg00488-foxdigital-fox29philadelphiawtx-vizious/playlist.m3u8
 #EXTINF:-1 tvg-name="Classica (720p)" tvg-logo="https://i.imgur.com/bLjmQTU.png" group-title="Uncategorized",Classica (720p)
 https://jmp2.uk/plu-5f779951372da90007fd45e8.m3u8
 #EXTINF:-1 tvg-name="Acasa Gold (1080p)" tvg-logo="https://static.wikia.nocookie.net/logopedia/images/f/fb/Acasa_Gold_2022.svg/revision/latest/scale-to-width-down/512" group-title="Uncategorized",Acasa Gold (1080p)
@@ -141,6 +193,8 @@ https://jmp2.uk/plu-5f357e91b18f0b00073583d2.m3u8
 http://45.173.12.70:8000/play/a0hh
 #EXTINF:-1 tvg-name="AMC Europe Bulgary" tvg-logo="https://upload.wikimedia.org/wikipedia/commons/thumb/3/34/AMC_logo_2019.svg/960px-AMC_logo_2019.svg.png" group-title="Uncategorized",AMC Europe Bulgary
 http://212.70.131.37:8000/play/a05k
+#EXTINF:-1 tvg-name="Dongguan Comprehensive News Channel" tvg-logo="https://www.tvchinese.net/uploads/tv/dgtv1.jpg" group-title="Uncategorized",Dongguan Comprehensive News Channel
+http://stream.sun0769.com/dgrtv1/mp4tv1_1500.flv
 #EXTINF:-1 tvg-name="Cartoon Network Latin America North Atlantic (1080p)" tvg-logo="https://upload.wikimedia.org/wikipedia/commons/thumb/8/80/Cartoon_Network_2010_logo.svg/960px-Cartoon_Network_2010_logo.svg.png" group-title="Kids",Cartoon Network Latin America North Atlantic (1080p)
 http://45.173.12.70:8000/play/a0fj
 #EXTINF:-1 tvg-name="Crimen & Historia (720p)" tvg-logo="https://images.pluto.tv/channels/64ddcbb14c5ed80008fad416/colorLogoPNG.png" group-title="Uncategorized",Crimen & Historia (720p)

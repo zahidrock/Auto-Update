@@ -1,6 +1,10 @@
 #EXTM3U
+#EXTINF:-1 tvg-name="Cula4 (576p) [Not 24/7]" tvg-logo="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c0/Cula4_Purple_2022_%281%29.svg/960px-Cula4_Purple_2022_%281%29.svg.png" group-title="Kids",Cula4 (576p) [Not 24/7]
+http://41.180.140.146:4200/bysid/2106
 #EXTINF:-1 tvg-name="Animax Asia Taiwan" tvg-logo="https://upload.wikimedia.org/wikipedia/commons/thumb/6/6f/Animax.png/960px-Animax.png" group-title="Kids",Animax Asia Taiwan
 http://125.227.210.55:3056/VideoInput/play.ts
+#EXTINF:-1 tvg-name="EKids (576p)" tvg-logo="" group-title="Kids",EKids (576p)
+http://78.108.244.134:8899/ekids
 #EXTINF:-1 tvg-name="CBeebies Asia Vietnam (720p)" tvg-logo="https://upload.wikimedia.org/wikipedia/en/thumb/1/16/CBeebies.svg/960px-CBeebies.svg.png" group-title="Kids",CBeebies Asia Vietnam (720p)
 http://antm.dynu.net:14285/rtp/232.84.3.200:11122
 #EXTINF:-1 tvg-name="Cartoonito CEE Bulgary" tvg-logo="https://i.imgur.com/9MrzLb1.png" group-title="Kids",Cartoonito CEE Bulgary
