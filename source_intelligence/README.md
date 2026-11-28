@@ -3,7 +3,7 @@
 ## Current source policy
 
 - Only hosts listed in `config/settings.json` under `approved_source_hosts` and `approved_stream_hosts` are fetched or published.
-- The current allowlist is limited to the official BTV live portal and BTV website domains.
+- Approved source pages include official BTV and Prasar Bharati / WAVES / NewsOnAir domains. The stream-host allowlist remains restricted to BTV until other CDN hosts are independently verified.
 - The seed list contains only official BTV live pages. Unverified public playlist aggregators are not treated as proof of broadcast authorization.
 - HLS redirects and media-segment hosts must also remain on the approved host list.
 - Explicit geo-blocked, subscription, pay-TV, login, and DRM-marked entries are rejected.
@@ -17,7 +17,7 @@ The collector prunes old database rows outside the current allowlists before dis
 
 - `config/settings.json`: host allowlists, thresholds, and output settings.
 - `config/seeds.txt`: official broadcaster pages to inspect.
-- `src/main.py`: discovery, validation, database, and playlist generation.
+- `src/main.py`: discovery, validation, database, and playlist generation. HLS URLs found on official pages but hosted on unverified CDNs are recorded in `output/candidate_stream_report.csv`; they are not fetched or published until their delivery host is verified.
 - `.github/workflows/source-intelligence.yml`: GitHub Actions automation.
 
 A GitHub Actions runner is not located in Bangladesh. Its speed measurements are only a rough filter and cannot guarantee local playback.
