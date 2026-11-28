@@ -4,7 +4,6 @@ https://btvlive.gov.bd/channel/BTV,seed,0,done,200,2026-11-28 02:08:20,,8,8
 https://btvlive.gov.bd/channel/BTV-Chattogram,seed,0,done,200,2026-11-28 02:08:20,,8,8
 https://btvlive.gov.bd/channel/BTV-News,seed,0,done,200,2026-11-28 02:08:20,,8,8
 https://btvlive.gov.bd/channel/Sangsad-Television,seed,0,done,200,2026-11-28 02:08:20,,8,8
-https://live.btv.gov.bd/,seed,0,error,,2026-11-28 04:34:11,"HTTPSConnectionPool(host='live.btv.gov.bd', port=443): Max retries exceeded with url: / (Caused by NameResolutionError(""HTTPSConnection(host='live.btv.gov.bd', port=443): Failed to resolve 'live.btv.gov.bd' ([Errno -2] Name or service not known)""))",0,0
 https://newsonair.gov.in/,seed,0,done,200,2026-11-28 04:41:25,,1,1
 https://prasarbharati.gov.in/en/waves/,seed,0,empty,200,2026-11-28 04:41:25,,0,0
 https://www.wavespb.com/,seed,0,empty,200,2026-11-28 04:41:25,,0,0
