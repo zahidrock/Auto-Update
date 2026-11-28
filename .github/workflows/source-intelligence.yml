@@ -11,7 +11,7 @@ on:
       - "!source_intelligence/data/**"
       - "!source_intelligence/output/**"
   schedule:
-    - cron: "35 20 * * *" # daily 02:35 Bangladesh time
+    - cron: "0 */3 * * *" # every 3 hours (UTC)
   workflow_dispatch:
 
 concurrency:
