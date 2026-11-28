@@ -78,6 +78,18 @@ def connect():
     ):
         if column not in source_columns:
             db.execute(f"ALTER TABLE sources ADD COLUMN {column} {definition}")
+    # Keep per-source EPG metadata with each stream so later recategorization
+    # does not lose group-title, country, language, or tvg identifiers.
+    link_columns = {row[1] for row in db.execute("PRAGMA table_info(links)")}
+    for column, definition in (
+        ("group_title", "TEXT DEFAULT ''"),
+        ("country", "TEXT DEFAULT ''"),
+        ("language", "TEXT DEFAULT ''"),
+        ("tvg_id", "TEXT DEFAULT ''"),
+        ("logo", "TEXT DEFAULT ''"),
+    ):
+        if column not in link_columns:
+            db.execute(f"ALTER TABLE links ADD COLUMN {column} {definition}")
     db.commit()
     return db
 
@@ -150,59 +162,75 @@ def is_free_to_air_label(name, group=""):
     return not bool(re.search(blocked, label, re.I))
 
 def discover_github_playlist_sources(db):
-    """Discover public M3U files in GitHub repositories using the public GitHub API."""
+    """Discover a bounded set of public M3U files across focused GitHub searches."""
     headers = {"Accept": "application/vnd.github+json", "User-Agent": UA}
     token = os.getenv("GITHUB_TOKEN") or os.getenv("GH_TOKEN")
     if token:
         headers["Authorization"] = f"Bearer {token}"
-    try:
-        response = SESSION.get(
-            "https://api.github.com/search/repositories",
-            params={"q": "iptv playlist m3u in:name,description", "sort": "updated",
-                    "order": "desc", "per_page": 30},
-            headers=headers, timeout=SETTINGS["request_timeout_seconds"])
-        response.raise_for_status()
-        repositories = response.json().get("items", [])
-    except Exception as exc:
-        logging.warning("GitHub public repository search failed: %s", str(exc)[:200])
-        return
+
+    # Three focused searches improve regional/category coverage without
+    # exhausting GitHub's unauthenticated search budget (10 requests/minute).
+    queries = (
+        "Bangladesh IPTV M3U",
+        "India IPTV M3U",
+        "English IPTV M3U",
+    )
+    repositories, seen_repos = [], set()
+    for query in queries:
+        try:
+            response = SESSION.get(
+                "https://api.github.com/search/repositories",
+                params={"q": query, "sort": "updated", "order": "desc", "per_page": 12},
+                headers=headers, timeout=SETTINGS["request_timeout_seconds"])
+            response.raise_for_status()
+            for repo in response.json().get("items", []):
+                full_name = repo.get("full_name", "")
+                if (full_name and full_name not in seen_repos
+                        and not repo.get("archived") and not repo.get("disabled")):
+                    seen_repos.add(full_name)
+                    repositories.append((repo, query))
+        except Exception as exc:
+            logging.warning("GitHub search failed for %s: %s", query, str(exc)[:180])
+
     added = 0
-    for repo in repositories[:8]:
-        full_name = repo.get("full_name", "")
-        branch = repo.get("default_branch", "main")
-        if not full_name or repo.get("archived") or repo.get("disabled"):
-            continue
+    for repo, query in repositories[:6]:
+        full_name = repo["full_name"]
+        branch = repo.get("default_branch") or "main"
         tree_url = f"https://api.github.com/repos/{full_name}/git/trees/{branch}"
         try:
             tree_response = SESSION.get(tree_url, params={"recursive": "1"}, headers=headers,
-                                       timeout=SETTINGS["request_timeout_seconds"])
+                                        timeout=SETTINGS["request_timeout_seconds"])
             tree_response.raise_for_status()
             tree = tree_response.json().get("tree", [])
         except Exception as exc:
             logging.info("Skipping GitHub tree %s: %s", full_name, str(exc)[:160])
             continue
+
         found = 0
         for item in tree:
             path = item.get("path", "")
-            if item.get("type") != "blob" or not path.lower().endswith((".m3u", ".m3u8")):
+            lower_path = path.lower()
+            if item.get("type") != "blob" or not lower_path.endswith((".m3u", ".m3u8")):
                 continue
             if item.get("size", 0) > 8_000_000 or any(
-                word in path.lower() for word in ("/test", "/sample", "/backup", "/archive")
+                marker in lower_path for marker in ("/test", "/sample", "/backup", "/archive", "/old/")
             ):
                 continue
             raw_url = f"https://raw.githubusercontent.com/{full_name}/{branch}/{path}"
             if is_approved_source(raw_url):
+                before = db.total_changes
                 db.execute("INSERT OR IGNORE INTO sources(url,discovered_from,depth) VALUES(?,?,0)",
-                           (raw_url, f"github repository search: {full_name}"))
-                added += 1
+                           (raw_url, f"github search: {query}; repository: {full_name}"))
+                if db.total_changes > before:
+                    added += 1
                 found += 1
-            if found >= 8 or added >= 40:
+            if found >= 5 or added >= 24:
                 break
-        logging.info("GitHub discovery: %s yielded %d playlist files", full_name, found)
-        if added >= 40:
+        logging.info("GitHub discovery: %s (%s) yielded %d playlist files", full_name, query, found)
+        if added >= 24:
             break
     db.commit()
-    logging.info("GitHub public repository discovery added %d playlist sources", added)
+    logging.info("Focused GitHub discovery added %d new playlist sources", added)
 
 
 def load_seeds(db):
@@ -368,20 +396,28 @@ def fetch_source(url):
 def add_channel(db, entry):
     name = entry.get("name") or "Unknown"
     group = entry.get("category", "")
-    if (not is_approved_source(entry.get("source_url", ""))
+    source_url = entry.get("source_url", "")
+    if (not is_approved_source(source_url)
             or not is_approved_stream(entry["url"])
             or not is_free_to_air_label(name, group)):
         return
-    cat = category_for(name, group, entry["url"], entry.get("source_url", ""),
+    cat = category_for(name, group, entry["url"], source_url,
                        entry.get("country", ""), entry.get("language", ""))
     norm = re.sub(r"[^a-z0-9]+", "", name.lower())
     db.execute("""INSERT OR IGNORE INTO channels(name,tvg_id,logo,category,normalized_name)
-                  VALUES(?,?,?,?,?)""", (name, entry.get("tvg_id",""), entry.get("logo",""), cat, norm))
-    row = db.execute("SELECT id FROM channels WHERE normalized_name=? AND category=?", (norm,cat)).fetchone()
+                  VALUES(?,?,?,?,?)""",
+               (name, entry.get("tvg_id", ""), entry.get("logo", ""), cat, norm))
+    row = db.execute("SELECT id FROM channels WHERE normalized_name=? AND category=?", (norm, cat)).fetchone()
     if row:
-        db.execute("""INSERT OR IGNORE INTO links(channel_id,url,source_url,source_name)
-                      VALUES(?,?,?,?)""", (row[0], entry["url"], entry.get("source_url"), entry.get("source_name","public playlist")))
+        db.execute("""INSERT OR IGNORE INTO links(
+                          channel_id,url,source_url,source_name,group_title,country,language,tvg_id,logo
+                      ) VALUES(?,?,?,?,?,?,?,?,?)""",
+                   (row[0], entry["url"], source_url,
+                    entry.get("source_name", "public playlist"), group,
+                    entry.get("country", ""), entry.get("language", ""),
+                    entry.get("tvg_id", ""), entry.get("logo", "")))
         db.execute("UPDATE links SET last_seen=CURRENT_TIMESTAMP WHERE url=?", (entry["url"],))
+
 
 def prune_unapproved(db):
     bad_links = []
@@ -461,25 +497,29 @@ def discover(db):
 
 
 def recategorize_channels(db):
-    """Reclassify existing registry rows after category rules improve."""
+    """Reclassify channels using metadata retained separately for every source link."""
     rows = db.execute("""
         SELECT c.id, c.name, c.category, c.normalized_name,
-               l.url, COALESCE(l.source_url,'')
+               l.url, COALESCE(l.source_url,''), COALESCE(l.group_title,''),
+               COALESCE(l.country,''), COALESCE(l.language,'')
         FROM channels c JOIN links l ON l.channel_id=c.id
         ORDER BY c.id, l.id
     """).fetchall()
     grouped = {}
-    for channel_id, name, current, normalized, url, source_url in rows:
-        grouped.setdefault(channel_id, {
-            "name": name, "current": current, "normalized": normalized, "categories": []
+    for channel_id, name, current, normalized, url, source_url, group, country, language in rows:
+        item = grouped.setdefault(channel_id, {
+            "name": name, "current": current, "normalized": normalized, "counts": defaultdict(int)
         })
-        category = category_for(name, "", url, source_url)
-        if category != "Uncategorized" and category not in grouped[channel_id]["categories"]:
-            grouped[channel_id]["categories"].append(category)
+        category = category_for(name, group, url, source_url, country, language)
+        if category != "Uncategorized":
+            item["counts"][category] += 1
 
     changed = 0
     for channel_id, item in grouped.items():
-        desired = item["categories"][0] if item["categories"] else item["current"]
+        if not item["counts"]:
+            continue
+        # Majority metadata wins; stable lexical tie-break avoids run-to-run flips.
+        desired = sorted(item["counts"].items(), key=lambda pair: (-pair[1], pair[0]))[0][0]
         if desired == item["current"]:
             continue
         target = db.execute(
@@ -493,7 +533,7 @@ def recategorize_channels(db):
             db.execute("UPDATE channels SET category=? WHERE id=?", (desired, channel_id))
         changed += 1
     db.commit()
-    logging.info("Reclassified %d existing channels using playlist index metadata", changed)
+    logging.info("Reclassified %d channels using retained per-link playlist metadata", changed)
 
 
 def check_link(row):
