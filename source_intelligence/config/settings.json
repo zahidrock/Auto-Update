@@ -46,7 +46,10 @@
   },
   "approved_source_hosts": [
     "btvlive.gov.bd",
-    "btv.gov.bd"
+    "btv.gov.bd",
+    "prasarbharati.gov.in",
+    "newsonair.gov.in",
+    "wavespb.com"
   ],
   "approved_stream_hosts": [
     "btvlive.gov.bd",
