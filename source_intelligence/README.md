@@ -4,7 +4,7 @@
 
 - Only hosts listed in `config/settings.json` under `approved_source_hosts` and `approved_stream_hosts` are fetched or published.
 - Approved source pages include official BTV and Prasar Bharati / WAVES / NewsOnAir domains. The stream-host allowlist remains restricted to BTV until other CDN hosts are independently verified.
-- The seed list contains only official BTV live pages. Unverified public playlist aggregators are not treated as proof of broadcast authorization.
+- The seed list contains official BTV and Prasar Bharati / WAVES / NewsOnAir pages. Unverified public playlist aggregators are not treated as proof of broadcast authorization.
 - HLS redirects and media-segment hosts must also remain on the approved host list.
 - Explicit geo-blocked, subscription, pay-TV, login, and DRM-marked entries are rejected.
 - Signed/credential-bearing URLs, private IPs, and local hosts are rejected.
