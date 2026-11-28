@@ -15,8 +15,19 @@ https://iptv-org.github.io/iptv/languages/eng.m3u,seed,0,done,200,2026-11-28 05:
 https://newsonair.gov.in/,seed,0,done,200,2026-11-28 04:41:25,,1,1
 https://prasarbharati.gov.in/en/waves/,seed,0,empty,200,2026-11-28 04:41:25,,0,0
 https://raw.githubusercontent.com/Free-TV/IPTV/master/playlist.m3u8,seed,0,done,200,2026-11-28 05:07:51,,2071,2071
+https://raw.githubusercontent.com/LITUATUI/M3UPT/main/M3U/CNN_Portugal.m3u8,github repository search: LITUATUI/M3UPT,0,empty,200,2026-11-28 05:40:50,,0,0
+https://raw.githubusercontent.com/LITUATUI/M3UPT/main/M3U/M3UPT.m3u,github repository search: LITUATUI/M3UPT,0,done,200,2026-11-28 05:41:04,,936,936
+https://raw.githubusercontent.com/LITUATUI/M3UPT/main/M3U/TVI.m3u8,github repository search: LITUATUI/M3UPT,0,empty,200,2026-11-28 05:41:05,,0,0
+https://raw.githubusercontent.com/LITUATUI/M3UPT/main/M3U/TVI_Ficcao.m3u8,github repository search: LITUATUI/M3UPT,0,empty,200,2026-11-28 05:41:05,,0,0
+https://raw.githubusercontent.com/LITUATUI/M3UPT/main/M3U/TVI_Internacional.m3u8,github repository search: LITUATUI/M3UPT,0,empty,200,2026-11-28 05:41:05,,0,0
+https://raw.githubusercontent.com/LITUATUI/M3UPT/main/M3U/TVI_Reality.m3u8,github repository search: LITUATUI/M3UPT,0,empty,200,2026-11-28 05:41:05,,0,0
+https://raw.githubusercontent.com/LITUATUI/M3UPT/main/M3U/Vmais_TVI.m3u8,github repository search: LITUATUI/M3UPT,0,empty,200,2026-11-28 05:41:05,,0,0
+https://raw.githubusercontent.com/Mrbotrx/BD-OTT-PLAYLIST/main/india/India_vip.m3u,github repository search: Mrbotrx/BD-OTT-PLAYLIST,0,done,200,2026-11-28 05:40:47,,410,410
+https://raw.githubusercontent.com/Mrbotrx/BD-OTT-PLAYLIST/main/kb_go_playlist.m3u8,github repository search: Mrbotrx/BD-OTT-PLAYLIST,0,done,200,2026-11-28 05:40:47,,16,16
+https://raw.githubusercontent.com/Mrbotrx/BD-OTT-PLAYLIST/main/output/BD-KB-IT.m3u,github repository search: Mrbotrx/BD-OTT-PLAYLIST,0,done,200,2026-11-28 05:40:47,,84,84
 https://raw.githubusercontent.com/SHIKARDOS/shikardos-radio-tv/main/Радио — 1000 лучших.m3u,github repository search: SHIKARDOS/shikardos-radio-tv,0,done,200,2026-11-28 05:11:26,,999,999
 https://raw.githubusercontent.com/SHIKARDOS/shikardos-radio-tv/main/ТВ — 1000 каналов.m3u,github repository search: SHIKARDOS/shikardos-radio-tv,0,done,200,2026-11-28 05:12:12,,918,918
+https://raw.githubusercontent.com/ashik4u/iptv-m3u-bot/main/output/all.m3u,github repository search: ashik4u/iptv-m3u-bot,0,done,200,2026-11-28 05:40:50,,152,149
 https://raw.githubusercontent.com/iqbal8846/sports-iptv/main/output/cricket.m3u,github repository search: iqbal8846/sports-iptv,0,done,200,2026-11-28 05:08:27,,268,268
 https://raw.githubusercontent.com/iqbal8846/sports-iptv/main/output/football.m3u,github repository search: iqbal8846/sports-iptv,0,done,200,2026-11-28 05:08:28,,305,305
 https://raw.githubusercontent.com/iqbal8846/sports-iptv/main/output/sports_all.m3u,github repository search: iqbal8846/sports-iptv,0,done,200,2026-11-28 05:08:29,,595,595
@@ -30,4 +41,15 @@ https://raw.githubusercontent.com/stonearro/iptv-playlist/main/output/kids.m3u,g
 https://raw.githubusercontent.com/stonearro/iptv-playlist/main/output/local.m3u,github repository search: stonearro/iptv-playlist,0,done,200,2026-11-28 05:09:19,,208,208
 https://raw.githubusercontent.com/stonearro/iptv-playlist/main/output/movie.m3u,github repository search: stonearro/iptv-playlist,0,done,200,2026-11-28 05:09:19,,13,13
 https://raw.githubusercontent.com/stonearro/iptv-playlist/main/output/multi.m3u,github repository search: stonearro/iptv-playlist,0,done,200,2026-11-28 05:09:22,,437,437
+https://raw.githubusercontent.com/zkkm2580/iptv-playlist/master/streams/ad.m3u,github repository search: zkkm2580/iptv-playlist,0,done,200,2026-11-28 05:40:43,,1,1
+https://raw.githubusercontent.com/zkkm2580/iptv-playlist/master/streams/ae.m3u,github repository search: zkkm2580/iptv-playlist,0,done,200,2026-11-28 05:40:46,,41,41
+https://raw.githubusercontent.com/zkkm2580/iptv-playlist/master/streams/af.m3u,github repository search: zkkm2580/iptv-playlist,0,done,200,2026-11-28 05:40:46,,23,23
+https://raw.githubusercontent.com/zkkm2580/iptv-playlist/master/streams/ag.m3u,github repository search: zkkm2580/iptv-playlist,0,done,200,2026-11-28 05:40:46,,1,1
+https://raw.githubusercontent.com/zkkm2580/iptv-playlist/master/streams/al.m3u,github repository search: zkkm2580/iptv-playlist,0,done,200,2026-11-28 05:40:47,,21,21
+https://raw.githubusercontent.com/zkkm2580/iptv-playlist/master/streams/am.m3u,github repository search: zkkm2580/iptv-playlist,0,done,200,2026-11-28 05:40:47,,5,5
+https://raw.githubusercontent.com/zkkm2580/iptv-playlist/master/streams/am_ucom.m3u,github repository search: zkkm2580/iptv-playlist,0,done,200,2026-11-28 05:40:47,,59,59
+https://raw.githubusercontent.com/zkkm2580/iptv-playlist/master/streams/am_vnet.m3u,github repository search: zkkm2580/iptv-playlist,0,done,200,2026-11-28 05:40:47,,23,23
 https://www.wavespb.com/,seed,0,empty,200,2026-11-28 04:41:25,,0,0
+https://raw.githubusercontent.com/srhady/Fancode-bd/refs/heads/main/main_playlist.m3u,https://raw.githubusercontent.com/ashik4u/iptv-m3u-bot/main/output/all.m3u,1,empty,200,2026-11-28 05:41:05,,0,0
+https://raw.githubusercontent.com/srhady/SonyLiv/refs/heads/main/sonyliv_playlist.m3u,https://raw.githubusercontent.com/ashik4u/iptv-m3u-bot/main/output/all.m3u,1,done,200,2026-11-28 05:41:05,,2,2
+https://raw.githubusercontent.com/srhady/tapmad-bd/refs/heads/main/tapmad_bd.m3u,https://raw.githubusercontent.com/ashik4u/iptv-m3u-bot/main/output/all.m3u,1,error,404,2026-11-28 05:41:05,404 Client Error: Not Found for url: https://raw.githubusercontent.com/srhady/tapmad-bd/refs/heads/main/tapmad_bd.m3u,0,0
