@@ -1,31 +1,32 @@
-# Public IPTV Source Intelligence
+# Public Free-to-Air TV Source Intelligence
 
-This collector discovers publicly accessible IPTV playlist sources, including GitHub repositories, community M3U/M3U8 indexes, and recursively linked public playlists.
+This collector accepts stream URLs only when their provenance can be traced to a broadcaster-controlled website explicitly listed in `config/settings.json`.
 
 ## Source discovery
-- Public community indexes are seeded from iptv-org and Free-TV.
-- GitHub's public repository search is used to discover additional repositories containing M3U/M3U8 files.
-- Nested playlist references are followed up to the configured recursion depth.
-- Stream hosts are not restricted to broadcaster-owned domains. Any globally reachable public stream host may be tested.
-- Source index hosts remain restricted to known public GitHub Pages / raw GitHub hosts to keep source fetching controlled.
+- The seed list currently contains Bangladesh Television's public live pages.
+- Public community playlists and GitHub repository searches are intentionally disabled. A public M3U file is not evidence that its streams are authorized.
+- Nested playlist references are followed only when they remain on an approved broadcaster-owned source domain.
+- External stream/CDN hosts are accepted only when their URLs are published by an approved official source page.
+- New countries and categories must not be added until an official, publicly accessible free-to-air source is verified.
 
 ## Validation and safety
-- Every stream URL, redirect, and HLS segment is checked for a globally routable public host.
-- Private, loopback, link-local, local-network, credential-bearing, and signed/expiring URLs are rejected.
-- Obvious subscription, login, geo-block, pay-TV, and DRM-labelled entries are excluded.
-- A publicly reachable URL is not proof of copyright permission. Only publicly accessible, free-to-access streams are collected; no login, payment, DRM, or geo-restriction bypass is attempted.
+- Private, loopback, link-local, local-network, credential-bearing, signed, and expiring URLs are rejected.
+- Known pay-TV/subscription brands, login-gated, DRM-labelled, and geo-blocked entries are excluded.
+- Existing database rows are pruned when their source provenance is no longer approved or their channel label indicates pay-TV.
+- The collector never signs in, pays, bypasses DRM, or bypasses geo-restrictions.
 - HTTP success alone is not enough: HLS manifest and first segment reachability are checked.
 - GitHub Actions runs outside Bangladesh, so speed tests are only a rough filter and cannot guarantee playback on a Bangladesh ISP.
 
 ## Files
-- `config/settings.json`: source hosts, limits, categories, and output settings.
-- `config/seeds.txt`: public playlist indexes.
-- `src/main.py`: GitHub discovery, recursive source collection, validation, database, and playlist generation.
-- `output/candidate_stream_report.csv`: public HLS candidates that still need validation.
+- `config/settings.json`: approved broadcaster domains, limits, categories, and output settings.
+- `config/seeds.txt`: official broadcaster live pages.
+- `src/main.py`: source collection, provenance checks, validation, database cleanup, and playlist generation.
+- `tests/test_source_policy.py`: source, pay-TV, and signed-URL policy regression tests.
+- `output/candidate_stream_report.csv`: public HLS candidates from approved official pages that still need review.
 - `output/source_report.csv` and `output/link_health_report.csv`: diagnostics.
 
 ## Outputs
-- `combined.m3u`: fastest primary links.
-- `all_fast_sources.m3u`: all fast validated links.
-- `backup_slow.m3u`: slower but reachable links.
+- `combined.m3u`: fastest primary approved links.
+- `all_fast_sources.m3u`: all fast approved links.
+- `backup_slow.m3u`: slower but reachable approved links.
 - Category-specific M3U files and `channel_report.csv`.

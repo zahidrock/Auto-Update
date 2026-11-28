@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - "source_intelligence/src/**"
+      - "source_intelligence/tests/**"
       - "source_intelligence/config/**"
       - "source_intelligence/requirements.txt"
       - ".github/workflows/source-intelligence.yml"
@@ -36,6 +37,8 @@ jobs:
         run: pip install -r source_intelligence/requirements.txt
       - name: Check Python syntax
         run: python -m py_compile source_intelligence/src/main.py
+      - name: Run source policy tests
+        run: python -m unittest discover -s source_intelligence/tests -v
       - name: Run source intelligence
         run: python source_intelligence/src/main.py
       - name: Commit database and generated playlists

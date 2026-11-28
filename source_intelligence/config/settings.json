@@ -46,11 +46,6 @@
   },
   "approved_source_hosts": [
     "btvlive.gov.bd",
-    "btv.gov.bd",
-    "prasarbharati.gov.in",
-    "newsonair.gov.in",
-    "wavespb.com",
-    "raw.githubusercontent.com",
-    "iptv-org.github.io"
+    "btv.gov.bd"
   ]
 }

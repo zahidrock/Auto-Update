@@ -8,7 +8,6 @@ import re
 import socket
 import sqlite3
 import time
-import os
 from functools import lru_cache
 from collections import defaultdict
 from pathlib import Path
@@ -120,7 +119,7 @@ def is_public_candidate(url):
     if not public_host_resolves_globally(host):
         return False
     # Never publish credential-bearing or expiring signed URLs to this public repository.
-    sensitive = r"[?&](?:access_?token|api_?key|auth|authorization|password|passwd|secret|signature|sig|token|x-amz-(?:signature|credential)|x-goog-signature)="
+    sensitive = r"[?&](?:access_?token|api_?key|auth(?:orization)?|auth_?key|bearer|credential|jwt|password|passwd|secret|signature|sig|token|policy|key[-_]?pair[-_]?id|hdnts|hdnea|x-amz-(?:signature|credential|security-token|algorithm|date|expires)|x-goog-(?:signature|credential|algorithm|date|expires))="
     return not bool(re.search(sensitive, url, re.I))
 
 def host_allowed(url, setting_name):
@@ -129,11 +128,13 @@ def host_allowed(url, setting_name):
     return bool(host) and any(host == domain or host.endswith("." + domain) for domain in allowed)
 
 def is_approved_source(url):
+    # Source provenance must begin on a broadcaster-controlled domain listed
+    # in approved_source_hosts. Public community playlists are not authorization.
     return is_public_candidate(url) and host_allowed(url, "approved_source_hosts")
 
 def is_approved_stream(url):
-    # Streams may be hosted on any globally reachable public CDN/provider.
-    # The public URL, redirect targets, and HLS segments are still screened.
+    # An external CDN is acceptable only when its URL was published by an
+    # approved official source page; add_channel() enforces that provenance.
     return is_public_candidate(url)
 
 def approved_get(url, policy, **kwargs):
@@ -158,80 +159,20 @@ def approved_get(url, policy, **kwargs):
 
 def is_free_to_air_label(name, group=""):
     label = f"{name or ''} {group or ''}".lower()
-    blocked = r"\b(?:geo[- ]?blocked|pay[- ]?tv|subscription|premium channel|requires? login|drm)\b"
-    return not bool(re.search(blocked, label, re.I))
-
-def discover_github_playlist_sources(db):
-    """Discover a bounded set of public M3U files across focused GitHub searches."""
-    headers = {"Accept": "application/vnd.github+json", "User-Agent": UA}
-    token = os.getenv("GITHUB_TOKEN") or os.getenv("GH_TOKEN")
-    if token:
-        headers["Authorization"] = f"Bearer {token}"
-
-    # Three focused searches improve regional/category coverage without
-    # exhausting GitHub's unauthenticated search budget (10 requests/minute).
-    queries = (
-        "Bangladesh IPTV M3U",
-        "India IPTV M3U",
-        "English IPTV M3U",
+    # Conservative deny-list for subscription, premium and known pay-TV brands.
+    # Unknown channels still require provenance from an approved broadcaster page.
+    blocked = (
+        r"\b(?:geo[- ]?blocked|pay[- ]?tv|subscription(?:[- ]only)?|"
+        r"premium(?:\s+(?:channel|sports|movie|package))?|requires?\s+login|drm|"
+        r"hbo|cinemax|showtime|starz|dazn|be\s*in(?:\s*sports)?|canal\s*\+|"
+        r"sky\s*(?:sports|cinema)|eurosport|espn|fox\s*sports|sportsnet|tsn|"
+        r"discovery(?:\s+(?:channel|asia|turbo))?|animal\s+planet|history(?:\s+channel)?|"
+        r"axn|filmbox|sony\s*(?:ten|sports)|star\s*sports|colors?\s*cineplex|"
+        r"disney\s+channel|nickelodeon|paramount\s*(?:network|\+)|a\s*&\s*e|"
+        r"fx\s+(?:latin|asia)|globoplay|netflix|prime\s+video|peacock|hulu|apple\s*tv\+)"
+        r"\b"
     )
-    repositories, seen_repos = [], set()
-    for query in queries:
-        try:
-            response = SESSION.get(
-                "https://api.github.com/search/repositories",
-                params={"q": query, "sort": "updated", "order": "desc", "per_page": 12},
-                headers=headers, timeout=SETTINGS["request_timeout_seconds"])
-            response.raise_for_status()
-            for repo in response.json().get("items", []):
-                full_name = repo.get("full_name", "")
-                if (full_name and full_name not in seen_repos
-                        and not repo.get("archived") and not repo.get("disabled")):
-                    seen_repos.add(full_name)
-                    repositories.append((repo, query))
-        except Exception as exc:
-            logging.warning("GitHub search failed for %s: %s", query, str(exc)[:180])
-
-    added = 0
-    for repo, query in repositories[:6]:
-        full_name = repo["full_name"]
-        branch = repo.get("default_branch") or "main"
-        tree_url = f"https://api.github.com/repos/{full_name}/git/trees/{branch}"
-        try:
-            tree_response = SESSION.get(tree_url, params={"recursive": "1"}, headers=headers,
-                                        timeout=SETTINGS["request_timeout_seconds"])
-            tree_response.raise_for_status()
-            tree = tree_response.json().get("tree", [])
-        except Exception as exc:
-            logging.info("Skipping GitHub tree %s: %s", full_name, str(exc)[:160])
-            continue
-
-        found = 0
-        for item in tree:
-            path = item.get("path", "")
-            lower_path = path.lower()
-            if item.get("type") != "blob" or not lower_path.endswith((".m3u", ".m3u8")):
-                continue
-            if item.get("size", 0) > 8_000_000 or any(
-                marker in lower_path for marker in ("/test", "/sample", "/backup", "/archive", "/old/")
-            ):
-                continue
-            raw_url = f"https://raw.githubusercontent.com/{full_name}/{branch}/{path}"
-            if is_approved_source(raw_url):
-                before = db.total_changes
-                db.execute("INSERT OR IGNORE INTO sources(url,discovered_from,depth) VALUES(?,?,0)",
-                           (raw_url, f"github search: {query}; repository: {full_name}"))
-                if db.total_changes > before:
-                    added += 1
-                found += 1
-            if found >= 5 or added >= 24:
-                break
-        logging.info("GitHub discovery: %s (%s) yielded %d playlist files", full_name, query, found)
-        if added >= 24:
-            break
-    db.commit()
-    logging.info("Focused GitHub discovery added %d new playlist sources", added)
-
+    return not bool(re.search(blocked, label, re.I))
 
 def load_seeds(db):
     urls = []
@@ -435,8 +376,13 @@ def add_channel(db, entry):
 
 def prune_unapproved(db):
     bad_links = []
-    for link_id, url, source_url in db.execute("SELECT id,url,source_url FROM links"):
-        if not is_approved_stream(url) or not is_approved_source(source_url or ""):
+    rows = db.execute("""
+        SELECT l.id, l.url, COALESCE(l.source_url,''), c.name, COALESCE(l.group_title,'')
+        FROM links l JOIN channels c ON c.id=l.channel_id
+    """).fetchall()
+    for link_id, url, source_url, name, group in rows:
+        if (not is_approved_stream(url) or not is_approved_source(source_url)
+                or not is_free_to_air_label(name, group)):
             bad_links.append((link_id,))
     if bad_links:
         db.executemany("DELETE FROM links WHERE id=?", bad_links)
@@ -448,9 +394,19 @@ def prune_unapproved(db):
     if bad_sources:
         db.executemany("DELETE FROM sources WHERE url=?", bad_sources)
 
+    bad_candidates = [
+        (url,) for url, source_url in db.execute("SELECT url,source_url FROM candidate_streams")
+        if not is_public_candidate(url) or not is_approved_source(source_url or "")
+    ]
+    if bad_candidates:
+        db.executemany("DELETE FROM candidate_streams WHERE url=?", bad_candidates)
+
     db.execute("DELETE FROM channels WHERE NOT EXISTS (SELECT 1 FROM links WHERE links.channel_id=channels.id)")
     db.commit()
-    logging.info("Removed %d unapproved links and %d unapproved sources", len(bad_links), len(bad_sources))
+    logging.info(
+        "Removed %d unapproved/pay-TV links, %d unapproved sources and %d unapproved candidates",
+        len(bad_links), len(bad_sources), len(bad_candidates)
+    )
 
 def discover(db):
     queue = [(r[0], r[1]) for r in db.execute("SELECT url,depth FROM sources WHERE last_checked IS NULL OR last_checked < datetime('now','-20 hours') ORDER BY depth ASC LIMIT ?", (SETTINGS["max_sources_per_run"],)) if is_approved_source(r[0])]
@@ -677,10 +633,12 @@ def generate(db):
     write_source_report(db)
     write_candidate_report(db)
     write_link_health_report(db)
-    base = db.execute("""SELECT c.name,c.logo,c.category,l.url,l.status,l.bytes_per_second,l.ttfb
+    base = db.execute("""SELECT c.name,c.logo,c.category,l.url,l.status,l.bytes_per_second,l.ttfb,
+                                COALESCE(l.source_url,'')
                          FROM links l JOIN channels c ON c.id=l.channel_id
                          WHERE l.status IN ('fast','slow') ORDER BY l.bytes_per_second DESC""").fetchall()
-    base = [r for r in base if is_approved_stream(r[3]) and is_free_to_air_label(r[0], r[2])]
+    base = [r for r in base if is_approved_source(r[7]) and is_approved_stream(r[3])
+            and is_free_to_air_label(r[0], r[2])]
     best = {}
     for name,logo,cat,url,status,speed,ttfb in base:
         key = (re.sub(r"[^a-z0-9]+","",name.lower()), cat)
@@ -713,7 +671,6 @@ def main():
     try:
         prune_unapproved(db)
         load_seeds(db)
-        discover_github_playlist_sources(db)
         discover(db)
         recategorize_channels(db)
         validate(db)
