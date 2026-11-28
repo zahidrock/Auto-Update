@@ -365,12 +365,22 @@ def discover(db):
         db.commit()
 
 def check_link(row):
-    link_id, url = row
+    link_id, url, source_url = row
     if not is_approved_stream(url):
         return link_id, None, 0.0, 0.0, 0, "Stream host is not approved"
+    # Some official broadcaster CDNs reject direct requests without the page
+    # that embeds the player. Reuse its public page as Referer/Origin. This
+    # does not bypass login, DRM, geo-blocks, or signed URL controls.
+    headers = {}
+    if source_url:
+        parsed_source = urlparse(source_url)
+        headers["Referer"] = source_url
+        if parsed_source.scheme and parsed_source.netloc:
+            headers["Origin"] = f"{parsed_source.scheme}://{parsed_source.netloc}"
     start = time.monotonic()
     try:
-        with approved_get(url, is_approved_stream, timeout=SETTINGS["request_timeout_seconds"], stream=True) as r:
+        with approved_get(url, is_approved_stream, timeout=SETTINGS["request_timeout_seconds"],
+                          stream=True, headers=headers) as r:
             ttfb = time.monotonic() - start
             status = r.status_code
             if not is_approved_stream(r.url):
@@ -390,8 +400,9 @@ def check_link(row):
                 if segment:
                     segment_url = urljoin(r.url, segment)
                     try:
-                        with approved_get(segment_url, is_approved_stream, timeout=SETTINGS["request_timeout_seconds"],
-                                          stream=True) as sr:
+                        with approved_get(segment_url, is_approved_stream,
+                                          timeout=SETTINGS["request_timeout_seconds"],
+                                          stream=True, headers=headers) as sr:
                             segment_ok = int(is_approved_stream(sr.url) and sr.status_code < 400 and len(next(sr.iter_content(4096), b"")) >= SETTINGS["minimum_segment_bytes"])
                     except Exception:
                         segment_ok = 0
@@ -403,7 +414,7 @@ def check_link(row):
         return link_id, None, time.monotonic()-start, 0.0, 0, str(exc)[:300]
 
 def validate(db):
-    rows = db.execute("""SELECT id,url FROM links
+    rows = db.execute("""SELECT id,url,COALESCE(source_url,'') FROM links
                          WHERE last_seen >= datetime('now','-45 days')
                            AND (last_checked IS NULL OR last_checked < datetime('now','-20 hours'))
                          ORDER BY id LIMIT 1200""").fetchall()
