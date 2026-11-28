@@ -1,7 +1,10 @@
-# Official Bangladesh Television public live pages only.
-# Community playlist indexes and unverified GitHub M3U files are intentionally excluded.
-https://btvlive.gov.bd/
-https://btvlive.gov.bd/channel/BTV
-https://btvlive.gov.bd/channel/BTV-News
-https://btvlive.gov.bd/channel/BTV-Chattogram
-https://btvlive.gov.bd/channel/Sangsad-Television
+# Freely accessible public playlist indexes; streams are independently checked before output.
+https://iptv-org.github.io/iptv/index.m3u
+https://iptv-org.github.io/iptv/countries/bd.m3u
+https://iptv-org.github.io/iptv/countries/in.m3u
+https://iptv-org.github.io/iptv/categories/movies.m3u
+https://iptv-org.github.io/iptv/categories/music.m3u
+https://iptv-org.github.io/iptv/categories/sports.m3u
+https://iptv-org.github.io/iptv/categories/kids.m3u
+https://iptv-org.github.io/iptv/languages/eng.m3u
+https://raw.githubusercontent.com/Free-TV/IPTV/master/playlist.m3u8

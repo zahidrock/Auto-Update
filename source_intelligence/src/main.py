@@ -4,6 +4,7 @@ import concurrent.futures
 import ipaddress
 import json
 import logging
+import os
 import re
 import socket
 import sqlite3
@@ -160,7 +161,7 @@ def approved_get(url, policy, **kwargs):
 def is_free_to_air_label(name, group=""):
     label = f"{name or ''} {group or ''}".lower()
     # Conservative deny-list for subscription, premium and known pay-TV brands.
-    # Unknown channels still require provenance from an approved broadcaster page.
+    # Unknown labels are allowed when found in a public playlist; this deny-list only removes known restricted brands.
     blocked = (
         r"\b(?:geo[- ]?blocked|pay[- ]?tv|subscription(?:[- ]only)?|"
         r"premium(?:\s+(?:channel|sports|movie|package))?|requires?\s+login|drm|"
@@ -182,7 +183,7 @@ def load_seeds(db):
             if is_approved_source(line):
                 urls.append(line)
             else:
-                logging.warning("Skipping seed outside approved source hosts: %s", urlparse(line).hostname)
+                logging.warning("Skipping unsafe or non-public seed: %s", urlparse(line).hostname)
     for url in urls:
         db.execute("INSERT OR IGNORE INTO sources(url, discovered_from, depth) VALUES(?,?,0)", (url, "seed"))
     db.commit()
@@ -407,6 +408,76 @@ def prune_unapproved(db):
         "Removed %d unapproved/pay-TV links, %d unapproved sources and %d unapproved candidates",
         len(bad_links), len(bad_sources), len(bad_candidates)
     )
+
+def discover_github_playlist_sources(db):
+    """Discover a bounded set of public M3U files across focused GitHub searches."""
+    headers = {"Accept": "application/vnd.github+json", "User-Agent": UA}
+    token = os.getenv("GITHUB_TOKEN") or os.getenv("GH_TOKEN")
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+
+    queries = (
+        "Bangladesh IPTV M3U",
+        "India IPTV M3U",
+        "English IPTV M3U",
+    )
+    repositories, seen_repos = [], set()
+    for query in queries:
+        try:
+            response = SESSION.get(
+                "https://api.github.com/search/repositories",
+                params={"q": query, "sort": "updated", "order": "desc", "per_page": 12},
+                headers=headers, timeout=SETTINGS["request_timeout_seconds"])
+            response.raise_for_status()
+            for repo in response.json().get("items", []):
+                full_name = repo.get("full_name", "")
+                if (full_name and full_name not in seen_repos
+                        and not repo.get("archived") and not repo.get("disabled")):
+                    seen_repos.add(full_name)
+                    repositories.append((repo, query))
+        except Exception as exc:
+            logging.warning("GitHub search failed for %s: %s", query, str(exc)[:180])
+
+    added = 0
+    for repo, query in repositories[:6]:
+        full_name = repo["full_name"]
+        branch = repo.get("default_branch") or "main"
+        tree_url = f"https://api.github.com/repos/{full_name}/git/trees/{branch}"
+        try:
+            tree_response = SESSION.get(tree_url, params={"recursive": "1"}, headers=headers,
+                                        timeout=SETTINGS["request_timeout_seconds"])
+            tree_response.raise_for_status()
+            tree = tree_response.json().get("tree", [])
+        except Exception as exc:
+            logging.info("Skipping GitHub tree %s: %s", full_name, str(exc)[:160])
+            continue
+
+        found = 0
+        for item in tree:
+            path = item.get("path", "")
+            lower_path = path.lower()
+            if item.get("type") != "blob" or not lower_path.endswith((".m3u", ".m3u8")):
+                continue
+            if item.get("size", 0) > 8_000_000 or any(
+                marker in lower_path for marker in ("/test", "/sample", "/backup", "/archive", "/old/")
+            ):
+                continue
+            raw_url = f"https://raw.githubusercontent.com/{full_name}/{branch}/{path}"
+            if is_approved_source(raw_url):
+                before = db.total_changes
+                db.execute("INSERT OR IGNORE INTO sources(url,discovered_from,depth) VALUES(?,?,0)",
+                           (raw_url, f"github search: {query}; repository: {full_name}"))
+                if db.total_changes > before:
+                    added += 1
+                found += 1
+            if found >= 5 or added >= 24:
+                break
+        logging.info("GitHub discovery: %s (%s) yielded %d playlist files", full_name, query, found)
+        if added >= 24:
+            break
+    db.commit()
+    logging.info("Focused GitHub discovery added %d new playlist sources", added)
+
 
 def discover(db):
     queue = [(r[0], r[1]) for r in db.execute("SELECT url,depth FROM sources WHERE last_checked IS NULL OR last_checked < datetime('now','-20 hours') ORDER BY depth ASC LIMIT ?", (SETTINGS["max_sources_per_run"],)) if is_approved_source(r[0])]
@@ -640,7 +711,7 @@ def generate(db):
     base = [r for r in base if is_approved_source(r[7]) and is_approved_stream(r[3])
             and is_free_to_air_label(r[0], r[2])]
     best = {}
-    for name,logo,cat,url,status,speed,ttfb in base:
+    for name,logo,cat,url,status,speed,ttfb,source_url in base:
         key = (re.sub(r"[^a-z0-9]+","",name.lower()), cat)
         candidate = (name,logo,cat,url,status,speed,ttfb)
         current = best.get(key)
@@ -671,6 +742,7 @@ def main():
     try:
         prune_unapproved(db)
         load_seeds(db)
+        discover_github_playlist_sources(db)
         discover(db)
         recategorize_channels(db)
         validate(db)

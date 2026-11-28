@@ -43,9 +43,5 @@
     "Sports": [
       "sports"
     ]
-  },
-  "approved_source_hosts": [
-    "btvlive.gov.bd",
-    "btv.gov.bd"
-  ]
+  }
 }
