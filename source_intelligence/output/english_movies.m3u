@@ -1,1 +1,3 @@
 #EXTM3U
+#EXTINF:-1 tvg-name="ABN Bible Movies Channel (720p)" tvg-logo="https://i.imgur.com/NCqZdaL.png" group-title="English Movies",ABN Bible Movies Channel (720p)
+https://mediaserver.abnvideos.com/streams/abnbiblemovies.m3u8
