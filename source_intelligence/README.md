@@ -1,23 +1,31 @@
-# IPTV Source Intelligence
+# Public IPTV Source Intelligence
 
-## Current source policy
+This collector discovers publicly accessible IPTV playlist sources, including GitHub repositories, community M3U/M3U8 indexes, and recursively linked public playlists.
 
-- Only hosts listed in `config/settings.json` under `approved_source_hosts` and `approved_stream_hosts` are fetched or published.
-- Approved source pages include official BTV and Prasar Bharati / WAVES / NewsOnAir domains. The stream-host allowlist remains restricted to BTV until other CDN hosts are independently verified.
-- The seed list contains official BTV and Prasar Bharati / WAVES / NewsOnAir pages. Unverified public playlist aggregators are not treated as proof of broadcast authorization.
-- HLS redirects and media-segment hosts must also remain on the approved host list.
-- Explicit geo-blocked, subscription, pay-TV, login, and DRM-marked entries are rejected.
-- Signed/credential-bearing URLs, private IPs, and local hosts are rejected.
+## Source discovery
+- Public community indexes are seeded from iptv-org and Free-TV.
+- GitHub's public repository search is used to discover additional repositories containing M3U/M3U8 files.
+- Nested playlist references are followed up to the configured recursion depth.
+- Stream hosts are not restricted to broadcaster-owned domains. Any globally reachable public stream host may be tested.
+- Source index hosts remain restricted to known public GitHub Pages / raw GitHub hosts to keep source fetching controlled.
 
-To add a broadcaster, first verify that its official website links to the stream and makes it publicly available without login, subscription, DRM circumvention, or geo-restriction bypass. If it uses a CDN, add that exact CDN hostname only after verifying the official link. Do not add third-party playlist collections merely because they are publicly downloadable.
-
-The collector prunes old database rows outside the current allowlists before discovery and filters again when generating playlists. Empty category playlists are expected until more official free-to-air sources are verified.
+## Validation and safety
+- Every stream URL, redirect, and HLS segment is checked for a globally routable public host.
+- Private, loopback, link-local, local-network, credential-bearing, and signed/expiring URLs are rejected.
+- Obvious subscription, login, geo-block, pay-TV, and DRM-labelled entries are excluded.
+- A publicly reachable URL is not proof of copyright permission. Only publicly accessible, free-to-access streams are collected; no login, payment, DRM, or geo-restriction bypass is attempted.
+- HTTP success alone is not enough: HLS manifest and first segment reachability are checked.
+- GitHub Actions runs outside Bangladesh, so speed tests are only a rough filter and cannot guarantee playback on a Bangladesh ISP.
 
 ## Files
+- `config/settings.json`: source hosts, limits, categories, and output settings.
+- `config/seeds.txt`: public playlist indexes.
+- `src/main.py`: GitHub discovery, recursive source collection, validation, database, and playlist generation.
+- `output/candidate_stream_report.csv`: public HLS candidates that still need validation.
+- `output/source_report.csv` and `output/link_health_report.csv`: diagnostics.
 
-- `config/settings.json`: host allowlists, thresholds, and output settings.
-- `config/seeds.txt`: official broadcaster pages to inspect.
-- `src/main.py`: discovery, validation, database, and playlist generation. HLS URLs found on official pages but hosted on unverified CDNs are recorded in `output/candidate_stream_report.csv`; they are not fetched or published until their delivery host is verified.
-- `.github/workflows/source-intelligence.yml`: GitHub Actions automation.
-
-A GitHub Actions runner is not located in Bangladesh. Its speed measurements are only a rough filter and cannot guarantee local playback.
+## Outputs
+- `combined.m3u`: fastest primary links.
+- `all_fast_sources.m3u`: all fast validated links.
+- `backup_slow.m3u`: slower but reachable links.
+- Category-specific M3U files and `channel_report.csv`.
