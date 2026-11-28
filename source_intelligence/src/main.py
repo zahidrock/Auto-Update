@@ -248,22 +248,34 @@ def discover_stream_refs(body, page_url):
 def fetch_source(url):
     if not is_approved_source(url):
         return url, url, None, "", 0.0, "Source host is not approved"
+    start = time.monotonic()
+    response = None
     try:
-        start = time.monotonic()
-        response = approved_get(url, is_approved_source, timeout=SETTINGS["request_timeout_seconds"], stream=True)
-        if not is_approved_source(response.url):
+        response = approved_get(url, is_approved_source,
+                                timeout=SETTINGS["request_timeout_seconds"], stream=True)
+        final_url = response.url
+        status = response.status_code
+        if not is_approved_source(final_url):
             response.close()
-            return url, response.url, None, "", time.monotonic() - start, "Redirected to an unapproved source host"
+            return url, final_url, status, "", time.monotonic() - start, "Redirected to an unapproved source host"
         response.raise_for_status()
         chunks, total = [], 0
         for chunk in response.iter_content(65536):
             if chunk:
-                chunks.append(chunk); total += len(chunk)
-                if total > 12_000_000: break
-        text = b"".join(chunks).decode(response.encoding or "utf-8", errors="replace")
-        return url, response.url, response.status_code, text, time.monotonic() - start, None
+                chunks.append(chunk)
+                total += len(chunk)
+                if total > 12_000_000:
+                    break
+        body = b"".join(chunks).decode(response.encoding or "utf-8", errors="replace")
+        response.close()
+        return url, final_url, status, body, time.monotonic() - start, None
     except Exception as exc:
-        return url, url, None, "", 0.0, str(exc)[:300]
+        # Preserve HTTP errors such as 401/403/404 in the source diagnostics.
+        status = response.status_code if response is not None else None
+        final_url = response.url if response is not None else url
+        if response is not None:
+            response.close()
+        return url, final_url, status, "", time.monotonic() - start, str(exc)[:300]
 
 def add_channel(db, entry):
     name = entry.get("name") or "Unknown"
@@ -326,29 +338,30 @@ def discover(db):
             stream_entries = []
             if not body.lstrip().startswith("#EXTM3U"):
                 stream_entries = discover_stream_refs(body, final_url)
+            nested_from_entries = {entry["url"] for entry in entries if entry.get("is_source")}
+            nested_refs = discover_playlist_refs(body, final_url)
+            nested_sources = nested_from_entries | nested_refs
             stream_candidates = sum(1 for entry in entries if not entry.get("is_source")) + len(stream_entries)
+            # A successful HTTP fetch with no playable or nested stream references is
+            # not a healthy discovery result; keep it distinct from a useful source.
+            source_state = "done" if stream_candidates or nested_sources else "empty"
+            entries_found = len(entries) + len(stream_entries) + len(nested_sources - nested_from_entries)
             db.execute("""UPDATE sources SET last_checked=CURRENT_TIMESTAMP,status=?,http_status=?,
                           last_error=NULL,entries_found=?,stream_candidates=? WHERE url=?""",
-                       ("done" if status and status < 400 else "error", status,
-                        len(entries) + len(stream_entries), stream_candidates, requested))
+                       (source_state, status, entries_found, stream_candidates, requested))
             for stream_entry in stream_entries:
                 add_channel(db, stream_entry)
-            for nested in discover_playlist_refs(body, final_url):
+            for nested in sorted(nested_sources):
                 if depth < SETTINGS["max_recursive_depth"] and nested not in visited:
                     db.execute("INSERT OR IGNORE INTO sources(url,discovered_from,depth) VALUES(?,?,?)",
                                (nested, requested, depth + 1))
                     queue.append((nested, depth + 1))
             for entry in entries:
-                if entry.get("is_source"):
-                    nested = entry["url"]
-                    if depth < SETTINGS["max_recursive_depth"] and nested not in visited:
-                        db.execute("INSERT OR IGNORE INTO sources(url,discovered_from,depth) VALUES(?,?,?)",
-                                   (nested, requested, depth + 1))
-                        queue.append((nested, depth + 1))
-                else:
+                if not entry.get("is_source"):
                     entry["source_name"] = urlparse(final_url).netloc
                     add_channel(db, entry)
-            logging.info("Parsed %s: %d entries", requested, len(entries))
+            logging.info("Parsed %s: %d entries, %d stream candidates, %d nested sources",
+                         requested, entries_found, stream_candidates, len(nested_sources))
         db.commit()
 
 def check_link(row):
