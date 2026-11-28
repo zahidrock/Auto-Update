@@ -453,9 +453,8 @@ def check_link(row):
     link_id, url, source_url = row
     if not is_approved_stream(url):
         return link_id, None, 0.0, 0.0, 0, "Stream host is not approved"
-    # Some official broadcaster CDNs reject direct requests without the page
-    # that embeds the player. Reuse its public page as Referer/Origin. This
-    # does not bypass login, DRM, geo-blocks, or signed URL controls.
+    # Some public stream hosts require the public playlist page as Referer/Origin.
+    # This does not bypass login, DRM, geo-blocks, or signed URL controls.
     headers = {}
     if source_url:
         parsed_source = urlparse(source_url)
@@ -548,7 +547,7 @@ def write_candidate_report(db):
     with (OUT_DIR / "candidate_stream_report.csv").open("w", encoding="utf-8", newline="") as f:
         import csv
         writer = csv.writer(f)
-        writer.writerow(["candidate_stream_url", "official_source_page", "discovered_at", "review_status", "notes"])
+        writer.writerow(["candidate_stream_url", "public_source_page", "discovered_at", "review_status", "notes"])
         writer.writerows(rows)
     logging.info("Unverified HLS candidates awaiting review: %d", len(rows))
 
